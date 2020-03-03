@@ -1,0 +1,10 @@
+# Ignore emacs files
+\#*
+\~*
+
+# Ignore build directory for temp files
+build
+# Ignore output files
+*.3dsx
+*.elf
+*.smdh
