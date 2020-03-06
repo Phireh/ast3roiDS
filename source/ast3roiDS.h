@@ -1,12 +1,16 @@
 #ifndef AST3ROIDS_H
 #define AST3ROIDS_H
 
+/* Includes */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <3ds.h>
 #include <citro2d.h>
 #include <math.h>
+
+/* Defines */
 
 #define WHITE C2D_Color32(0xFF, 0xFF, 0xFF, 0xFF)
 #define BLACK C2D_Color32(0x00, 0x00, 0x00, 0xFF)
@@ -19,6 +23,9 @@
 #else
 #define PRINTDINPUT(x)
 #endif
+
+
+/* Types */
 
 typedef enum {
               X0,        // 0
@@ -42,5 +49,9 @@ typedef struct player_ship_t {
 } player_ship_t;
 
 
+/* Functions */
+void init_player();
+void draw_player();
+void player_logic();
 
 #endif

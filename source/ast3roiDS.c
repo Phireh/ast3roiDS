@@ -1,10 +1,5 @@
 #include "ast3roiDS.h"
 
-/* Functions */
-void init_player();
-void draw_player();
-void player_logic();
-
 /* Globals */
 player_ship_t     player_ship;
 C3D_RenderTarget *top;
@@ -19,6 +14,7 @@ float             yinput;
 float             xinput_sensitivity = 1.0f;
 float             yinput_sensitivity = 0.01f;
 
+/* Main program */
 int main(int argc, char *argv[])
 {
   gfxInitDefault();
@@ -116,6 +112,7 @@ void init_player()
   player_ship.vertices[Y2] =  player_ship.radius;
 }
 
+/* Draw player ship as a triangle using 3 vertices */
 void draw_player()
 {
   /* float x0 = player_ship.x - 10.0f; */
@@ -147,6 +144,7 @@ void draw_player()
 #endif
 }
 
+/* Applies input and moves character */
 /* TODO: Fix velocity, it doesn't work right */
 void player_logic()
 {
