@@ -13,6 +13,7 @@ float             xinput;
 float             yinput;
 float             xinput_sensitivity = 1.0f;
 float             yinput_sensitivity = 0.01f;
+int               game_state = NORMAL_GAMESTATE;
 
 /* Main program */
 int main(int argc, char *argv[])
@@ -44,37 +45,32 @@ int main(int argc, char *argv[])
       u32 kHeld = hidKeysHeld();
 
       /* TODO: deal with analog input */
-      switch (kDown | kHeld) {
-      case KEY_CPAD_RIGHT:
-        PRINTDINPUT("Pressed KEY_CPAD_RIGHT\n");
-        xinput = 1.0f;
+      /* TODO: substitute this with if statements, as we need to be able to deal with multiple inputs per frame */
+      
+      int input_type = process_input(kDown, kHeld);
+      switch (input_type) {
+      case NORMAL_INPUT: // nothing to do
         break;
-      case KEY_CPAD_DOWN:
-        PRINTDINPUT("Pressed KEY_CPAD_DOWN\n");
-        yinput = -1.0f;
+      case PAUSE_GAME_INPUT: // pause on-off switch
+        if (game_state == NORMAL_GAMESTATE)
+          game_state = PAUSED_GAMESTATE;
+        else
+          game_state = NORMAL_GAMESTATE;
         break;
-      case KEY_CPAD_LEFT:
-        PRINTDINPUT("Pressed KEY_CPAD_LEFT\n");
-        xinput = -1.0f;
-        break;
-      case KEY_CPAD_UP:
-        PRINTDINPUT("Pressed KEY_CPAD_UP\n");
-        yinput = 1.0f;
-        break;
-      case KEY_START:
-        PRINTDINPUT("Pressed KEY_START\n");
+      case EXIT_GAME_INPUT:
         goto exit_main_loop;
         break;
-      case 0: // Pressed nothing
-        break;
       default:
-        PRINTFRAME; PRINTDINPUT("Pressed unmapped key\n");
-        
+        PRINTDINPUT("Error on input function\n");
         break;
       }
 
-      /* Logic */
-      player_logic();
+      if (game_state == NORMAL_GAMESTATE) {
+        /* Logic */
+        player_logic();
+      } else {
+        PRINTDLOGIC("Game is paused\n");
+      }
 
       /* Rendering */
       C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
@@ -96,8 +92,8 @@ int main(int argc, char *argv[])
 /* Initialize position, angle, and color of player ship */
 void init_player()
 {
-  player_ship.x      = 50.0f;
-  player_ship.y      = 50.0f;
+  player_ship.x      = 200.0f;
+  player_ship.y      = 120.0f;
   player_ship.yspeed = 0.0f;
   player_ship.xspeed = 0.0f;
   player_ship.angle  = 90.0f;
@@ -144,6 +140,39 @@ void draw_player()
 #endif
 }
 
+/* Simple processing of player input */
+int process_input(u32 keys_down, u32 keys_held)
+{
+  // for inputs that do not care about the first press
+  u32 input_keys = keys_down | keys_held; 
+  
+  if (input_keys & KEY_CPAD_RIGHT) {
+    PRINTDINPUT("Pressed KEY_CPAD_RIGHT\n");
+    xinput = 1.0f;
+  }
+  if (input_keys & KEY_CPAD_DOWN) {
+    PRINTDINPUT("Pressed KEY_CPAD_DOWN\n");
+    yinput = -1.0f;
+  }
+  if (input_keys & KEY_CPAD_LEFT) {
+    PRINTDINPUT("Pressed KEY_CPAD_LEFT\n");
+    xinput = -1.0f;
+  }
+  if (input_keys & KEY_CPAD_UP) {
+    PRINTDINPUT("Pressed KEY_CPAD_UP\n");
+    yinput = 1.0f;
+  }
+  if (keys_down & KEY_SELECT) {
+    PRINTDINPUT("Pressed KEY_SELECT\n");
+    return EXIT_GAME_INPUT;
+  }
+  if (keys_down & KEY_START) {
+    PRINTDINPUT("Pressed KEY_START\n");
+    return PAUSE_GAME_INPUT;
+  }
+  return NORMAL_INPUT;
+}
+
 /* Applies input and moves character */
 /* TODO: Fix velocity, it doesn't work right */
 void player_logic()
@@ -155,13 +184,17 @@ void player_logic()
   
   /* Update angle based on player input */
   float old_angle = player_ship.angle;
-  player_ship.angle = player_ship.angle - xinput;
-
-  // TODO: over/underflow of angle values
+  float new_angle = old_angle - xinput;
   
-#ifdef DEBUG_LOGIC
-  PRINTFRAME; printf("PLAYER ANGLE %3.2f", player_ship.angle);
-#endif
+  // Keep angles in [0,360] range
+  if (new_angle > 360.0f)
+    new_angle -= 360.0f;
+  if (new_angle < 0.0f)
+    new_angle += 360.0f;
+  
+  player_ship.angle = new_angle;
+
+  PRINTDLOGIC("PLAYER ANGLE %3.2f", player_ship.angle);
 
   /* Cache cos and sin for the duration of the frame */
   float fsin = sin( ((player_ship.angle)*M_PI) / 180.0f );
@@ -172,10 +205,10 @@ void player_logic()
   float dfcos = cos( ((old_angle - player_ship.angle)*M_PI) / 180.0f );
 
   /* Update speed vector */
-  player_ship.yspeed = player_ship.yspeed + yinput * fsin;
-  player_ship.xspeed = player_ship.xspeed + yinput * fcos;
+  player_ship.yspeed = player_ship.yspeed - yinput * fsin;
+  player_ship.xspeed = player_ship.xspeed - yinput * fcos;
   
-  printf("XVEL %2.2f YVEL %2.2f\n", player_ship.xspeed, player_ship.yspeed);
+  PRINTDLOGIC("XVEL %2.2f YVEL %2.2f\n", player_ship.xspeed, player_ship.yspeed);
 
   /* Update position */
   player_ship.x = player_ship.x + player_ship.xspeed;

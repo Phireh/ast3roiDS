@@ -19,9 +19,15 @@
 
 // NOTE: This is a two-function-macro, do not mix with one-line ifs
 #ifdef DEBUG_INPUT
-#define PRINTDINPUT(x) PRINTFRAME; printf(x)
+#define PRINTDINPUT(fmt, ...) PRINTFRAME; printf(fmt, ##__VA_ARGS__)
 #else
-#define PRINTDINPUT(x)
+#define PRINTDINPUT(fmt, ...) 
+#endif
+
+#ifdef DEBUG_LOGIC
+#define PRINTDLOGIC(fmt, ...) PRINTFRAME; printf(fmt, ##__VA_ARGS__)
+#else
+#define PRINTDLOGIC(fmt, ...)
 #endif
 
 
@@ -37,6 +43,19 @@ typedef enum {
               XY_TOTAL   // 6
 } vert_idx_t;
 
+typedef enum {
+              NORMAL_INPUT,     // 0
+              PAUSE_GAME_INPUT, // 1
+              EXIT_GAME_INPUT,  // 2
+              TOTAL_INPUT       // 3
+} input_return_t;
+
+typedef enum {
+              NORMAL_GAMESTATE, // 0
+              PAUSED_GAMESTATE, // 1
+              TOTAL_GAMESTATE   // 2
+} game_state_t;
+
 typedef struct player_ship_t {
   float x;
   float y;
@@ -50,8 +69,9 @@ typedef struct player_ship_t {
 
 
 /* Functions */
-void init_player();
 void draw_player();
+void init_player();
 void player_logic();
+int process_input(u32 keys_down, u32 keys_held);
 
 #endif
