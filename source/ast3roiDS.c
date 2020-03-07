@@ -205,8 +205,8 @@ void player_logic()
   float dfcos = cos( ((old_angle - player_ship.angle)*M_PI) / 180.0f );
 
   /* Update speed vector */
-  player_ship.yspeed = player_ship.yspeed - yinput * fsin;
-  player_ship.xspeed = player_ship.xspeed - yinput * fcos;
+  player_ship.yspeed = player_ship.yspeed + yinput * -fsin;
+  player_ship.xspeed = player_ship.xspeed + yinput * fcos;
   
   PRINTDLOGIC("XVEL %2.2f YVEL %2.2f\n", player_ship.xspeed, player_ship.yspeed);
 
