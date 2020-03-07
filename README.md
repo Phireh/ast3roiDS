@@ -17,4 +17,11 @@ To compile a debug version of the game, pass the relevant enviroment variables t
 To erase all build and output files, run:<br />
 ```$ make clean```
 
+# Trello
+Higher-level planification of the project is done in [our trello page](https://trello.com/b/7UVOp7Tn/ast3roids).
+
+# Contact
+In case this project keeps on living outside the context of our university course (press F to doubt) [contact us](mailto:damarhue@inf.upv.es).
+
+# NOTE
 Please do not commit binary files. Only the minimum amount of sources to build the game should be version-controlled.
