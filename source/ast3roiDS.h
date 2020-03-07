@@ -24,6 +24,7 @@
 #define PRINTDINPUT(fmt, ...) 
 #endif
 
+// NOTE: This is a two-function-macro, do not mix with one-line ifs
 #ifdef DEBUG_LOGIC
 #define PRINTDLOGIC(fmt, ...) PRINTFRAME; printf(fmt, ##__VA_ARGS__)
 #else
