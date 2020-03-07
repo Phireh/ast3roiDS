@@ -11,7 +11,7 @@ unsigned int      framecount; // NOTE: PRINTFRAME needs this name to be unchange
  */
 float             xinput;
 float             yinput;
-float             xinput_sensitivity = 1.0f;
+float             xinput_sensitivity = 2.0f;
 float             yinput_sensitivity = 0.01f;
 int               game_state = NORMAL_GAMESTATE;
 
@@ -103,7 +103,7 @@ void init_player()
   player_ship.vertices[X0] = -player_ship.radius;
   player_ship.vertices[Y0] =  player_ship.radius;
   player_ship.vertices[X1] =  0.0f;
-  player_ship.vertices[Y1] = -player_ship.radius;
+  player_ship.vertices[Y1] = -player_ship.radius*2.0f;
   player_ship.vertices[X2] =  player_ship.radius;
   player_ship.vertices[Y2] =  player_ship.radius;
 }
@@ -211,8 +211,30 @@ void player_logic()
   PRINTDLOGIC("XVEL %2.2f YVEL %2.2f\n", player_ship.xspeed, player_ship.yspeed);
 
   /* Update position */
-  player_ship.x = player_ship.x + player_ship.xspeed;
-  player_ship.y = player_ship.y + player_ship.yspeed;
+  float old_x = player_ship.x;
+  float new_x = old_x + player_ship.xspeed;
+
+  float old_y = player_ship.y;
+  float new_y = old_y + player_ship.yspeed;
+
+  if (new_y > TOP_SCREEN_HEIGHT) {
+    new_y = 0.0f;
+    PRINTDLOGIC("Ship went out of bounds downwards\n");
+  } else if (new_y < 0) {
+    new_y = (float) TOP_SCREEN_HEIGHT;
+    PRINTDLOGIC("Ship went out of bounds upwards\n");
+  }
+
+  if (new_x > TOP_SCREEN_WIDTH) {
+    new_x = 0;
+    PRINTDLOGIC("Ship went out of bounds rightwards\n");
+  } else if (new_x < 0) {
+    new_x = (float) TOP_SCREEN_WIDTH;
+    PRINTDLOGIC("Ship went out of bounds leftwards\n");
+  }
+  
+  player_ship.y = new_y;
+  player_ship.x = new_x;
 
   /* Update vertex positions for figure */
   // NOTE: Perhaps this is a good argument for switching to C++

@@ -12,10 +12,12 @@
 
 /* Defines */
 
-#define WHITE C2D_Color32(0xFF, 0xFF, 0xFF, 0xFF)
-#define BLACK C2D_Color32(0x00, 0x00, 0x00, 0xFF)
-#define DPAD (KEY_CPAD_RIGHT | KEY_CPAD_LEFT | KEY_CPAD_UP | KEY_CPAD_DOWN)
-#define PRINTFRAME printf("FRAME %d:  ", framecount)
+#define TOP_SCREEN_WIDTH    400
+#define TOP_SCREEN_HEIGHT   240
+#define WHITE               C2D_Color32(0xFF, 0xFF, 0xFF, 0xFF)
+#define BLACK               C2D_Color32(0x00, 0x00, 0x00, 0xFF)
+#define DPAD                (KEY_CPAD_RIGHT | KEY_CPAD_LEFT | KEY_CPAD_UP | KEY_CPAD_DOWN)
+#define PRINTFRAME          printf("FRAME %d:  ", framecount)
 
 // NOTE: This is a two-function-macro, do not mix with one-line ifs
 #ifdef DEBUG_INPUT
