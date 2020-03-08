@@ -44,7 +44,6 @@ int main(int argc, char *argv[])
       u32 kHeld = hidKeysHeld();
 
       /* TODO: deal with analog input */
-      /* TODO: substitute this with if statements, as we need to be able to deal with multiple inputs per frame */
       
       int input_type = process_input(kDown, kHeld);
       switch (input_type) {
@@ -174,7 +173,6 @@ int process_input(u32 keys_down, u32 keys_held)
 }
 
 /* Applies input and moves character */
-/* TODO: Fix velocity, it doesn't work right */
 void player_logic()
 {
 
