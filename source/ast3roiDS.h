@@ -17,18 +17,23 @@
 #define WHITE               C2D_Color32(0xFF, 0xFF, 0xFF, 0xFF)
 #define BLACK               C2D_Color32(0x00, 0x00, 0x00, 0xFF)
 #define DPAD                (KEY_CPAD_RIGHT | KEY_CPAD_LEFT | KEY_CPAD_UP | KEY_CPAD_DOWN)
-#define PRINTFRAME          printf("FRAME %d:  ", framecount)
 
-// NOTE: This is a two-function-macro, do not mix with one-line ifs
+#if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC)
+#define CHECKDEBUGMODE      consoleInit(GFX_BOTTOM, NULL);
+#define PRINTFRAME          printf("FRAME %d:  ", framecount)
+#else
+#define CHECKDEBUGMODE      
+#define PRINTFRAME          
+#endif
+
 #ifdef DEBUG_INPUT
-#define PRINTDINPUT(fmt, ...) PRINTFRAME; printf(fmt, ##__VA_ARGS__)
+#define PRINTDINPUT(fmt, ...) printf(fmt, ##__VA_ARGS__)
 #else
 #define PRINTDINPUT(fmt, ...) 
 #endif
 
-// NOTE: This is a two-function-macro, do not mix with one-line ifs
 #ifdef DEBUG_LOGIC
-#define PRINTDLOGIC(fmt, ...) PRINTFRAME; printf(fmt, ##__VA_ARGS__)
+#define PRINTDLOGIC(fmt, ...) printf(fmt, ##__VA_ARGS__)
 #else
 #define PRINTDLOGIC(fmt, ...)
 #endif
