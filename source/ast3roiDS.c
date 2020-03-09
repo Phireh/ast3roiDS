@@ -44,7 +44,6 @@ int main(int argc, char *argv[])
       u32 kHeld = hidKeysHeld();
 
       /* TODO: deal with analog input */
-      
       int input_type = process_input(kDown, kHeld);
       switch (input_type) {
       case NORMAL_INPUT: // nothing to do
@@ -88,7 +87,7 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-/* Initialize position, angle, and color of player ship */
+/* Initialize player's ship attributes */
 void init_player()
 {
   player_ship.x      = 200.0f;
@@ -99,37 +98,28 @@ void init_player()
   player_ship.radius = 10.0f;
   player_ship.color  = WHITE;
   
-  player_ship.vertices[X0] = -player_ship.radius;
+  player_ship.vertices[X0] = -player_ship.radius;        // vertex 0
   player_ship.vertices[Y0] =  player_ship.radius;
-  player_ship.vertices[X1] =  0.0f;
+  player_ship.vertices[X1] =  0.0f;                      // vertex 1
   player_ship.vertices[Y1] = -player_ship.radius*2.0f;
-  player_ship.vertices[X2] =  player_ship.radius;
+  player_ship.vertices[X2] =  player_ship.radius;        // vertex 2
   player_ship.vertices[Y2] =  player_ship.radius;
 }
 
 /* Draw player ship as a triangle using 3 vertices */
 void draw_player()
-{
-  /* float x0 = player_ship.x - 10.0f; */
-  /* float x1 = player_ship.x; */
-  /* float x2 = player_ship.x + 10.0f; */
-
-  /* float y0    = player_ship.y + 10.0f; */
-  /* float y1    = player_ship.y - 10.0f; */
-  /* float y2    = player_ship.y + 10.0f; */
-
-  
+{ 
   u32   clr   = player_ship.color;
   float depth = 1.0f;
 
   
-  C2D_DrawTriangle(player_ship.x + player_ship.vertices[X0],
+  C2D_DrawTriangle(player_ship.x + player_ship.vertices[X0], // vertex 0
                    player_ship.y + player_ship.vertices[Y0],
                    clr,
-                   player_ship.x + player_ship.vertices[X1],
+                   player_ship.x + player_ship.vertices[X1], // vertex 1
                    player_ship.y + player_ship.vertices[Y1],
                    clr,
-                   player_ship.x + player_ship.vertices[X2],
+                   player_ship.x + player_ship.vertices[X2], // vertex 2
                    player_ship.y + player_ship.vertices[Y2],
                    clr,
                    depth);
@@ -195,12 +185,12 @@ void player_logic()
   PRINTDLOGIC("PLAYER ANGLE %3.2f", player_ship.angle);
 
   /* Cache cos and sin for the duration of the frame */
-  float fsin = sin( ((player_ship.angle)*M_PI) / 180.0f );
-  float fcos = cos( ((player_ship.angle)*M_PI) / 180.0f );
+  float fsin = sin( ((new_angle)*M_PI) / 180.0f );
+  float fcos = cos( ((new_angle)*M_PI) / 180.0f );
 
   /* Save angle difference for doing rotations */
-  float dfsin = sin( ((old_angle - player_ship.angle)*M_PI) / 180.0f );
-  float dfcos = cos( ((old_angle - player_ship.angle)*M_PI) / 180.0f );
+  float dfsin = sin( ((old_angle - new_angle)*M_PI) / 180.0f );
+  float dfcos = cos( ((old_angle - new_angle)*M_PI) / 180.0f );
 
   /* Update speed vector */
   player_ship.yspeed = player_ship.yspeed + yinput * -fsin;
@@ -236,18 +226,22 @@ void player_logic()
 
   /* Update vertex positions for figure */
   // NOTE: Perhaps this is a good argument for switching to C++
-  float x0 = player_ship.vertices[X0] * dfcos - player_ship.vertices[Y0] * dfsin;
-  float x1 = player_ship.vertices[X1] * dfcos - player_ship.vertices[Y1] * dfsin;
-  float x2 = player_ship.vertices[X2] * dfcos - player_ship.vertices[Y2] * dfsin;
-  float y0 = player_ship.vertices[Y0] * dfcos + player_ship.vertices[X0] * dfsin;
-  float y1 = player_ship.vertices[Y1] * dfcos + player_ship.vertices[X1] * dfsin;
-  float y2 = player_ship.vertices[Y2] * dfcos + player_ship.vertices[X2] * dfsin;
+  float x0 = player_ship.vertices[X0] * dfcos - player_ship.vertices[Y0] * dfsin; // vertex 0
+  float y0 = player_ship.vertices[Y0] * dfcos + player_ship.vertices[X0] * dfsin;  
+  float x1 = player_ship.vertices[X1] * dfcos - player_ship.vertices[Y1] * dfsin; // vertex 1
+  float y1 = player_ship.vertices[Y1] * dfcos + player_ship.vertices[X1] * dfsin;  
+  float x2 = player_ship.vertices[X2] * dfcos - player_ship.vertices[Y2] * dfsin; // vertex 2
+  float y2 = player_ship.vertices[Y2] * dfcos + player_ship.vertices[X2] * dfsin;  
 
-  player_ship.vertices[X0] = x0;
-  player_ship.vertices[X1] = x1;
-  player_ship.vertices[X2] = x2;
+
+
+
+
+  player_ship.vertices[X0] = x0; // vertex 0
   player_ship.vertices[Y0] = y0; 
-  player_ship.vertices[Y1] = y1;
+  player_ship.vertices[X1] = x1; // vertex 1
+  player_ship.vertices[Y1] = y1;  
+  player_ship.vertices[X2] = x2; // vertex 2
   player_ship.vertices[Y2] = y2;
   
 }
