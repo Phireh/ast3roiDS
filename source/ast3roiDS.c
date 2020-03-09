@@ -2,6 +2,7 @@
 
 /* Globals */
 player_ship_t     player_ship;
+asteroid_t        asteroids[ASTEROID_NUMBER];
 C3D_RenderTarget *top;
 unsigned int      framecount; // NOTE: PRINTFRAME needs this name to be unchanged
 
@@ -18,6 +19,7 @@ int               game_state = NORMAL_GAMESTATE;
 /* Main program */
 int main(int argc, char *argv[])
 {
+  srand(time(NULL));
   gfxInitDefault();
   
   C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
@@ -30,7 +32,8 @@ int main(int argc, char *argv[])
   top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
 
   init_player();
-
+  for (int i = 0; i < ASTEROID_NUMBER; i++)
+    init_asteroid(&asteroids[i]);
   /* Main loop */
   while (aptMainLoop())
     {
@@ -65,6 +68,8 @@ int main(int argc, char *argv[])
       if (game_state == NORMAL_GAMESTATE) {
         /* Logic */
         player_logic();
+        for (int i = 0; i < ASTEROID_NUMBER; i++)
+          asteroid_logic(&asteroids[i]);
       } else {
         PRINTDLOGIC("Game is paused\n");
       }
@@ -73,7 +78,11 @@ int main(int argc, char *argv[])
       C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
       C2D_TargetClear(top, BLACK);
       C2D_SceneBegin(top);
+      
       draw_player();
+
+      for (int i = 0; i < ASTEROID_NUMBER; i++)
+        draw_asteroid(&asteroids[i]);
       C3D_FrameEnd(0);
 
       PRINTFRAME;
@@ -96,7 +105,7 @@ void init_player()
   player_ship.xspeed = 0.0f;
   player_ship.angle  = 90.0f;
   player_ship.radius = 10.0f;
-  player_ship.color  = WHITE;
+  player_ship.color  = RED;
   
   player_ship.vertices[X0] = -player_ship.radius;        // vertex 0
   player_ship.vertices[Y0] =  player_ship.radius;
@@ -104,6 +113,85 @@ void init_player()
   player_ship.vertices[Y1] = -player_ship.radius*2.0f;
   player_ship.vertices[X2] =  player_ship.radius;        // vertex 2
   player_ship.vertices[Y2] =  player_ship.radius;
+}
+
+void init_asteroid(asteroid_t *asteroid)
+{
+  float initial_x;
+  float initial_y;
+
+
+  /* Find starting position at least X px away from player in both directions */
+  do {
+    initial_x = RANDF(400);
+  } while (ABS(initial_x - player_ship.x) < PLAYER_SAFE_ZONE_RADIUS);
+
+  do {
+    initial_y = RANDF(400);
+  } while (ABS(initial_y - player_ship.y) < PLAYER_SAFE_ZONE_RADIUS);
+
+  asteroid->x = initial_x;
+  asteroid->y = initial_y;
+  asteroid->xspeed = RANDF(0.5f);
+  asteroid->yspeed = RANDF(0.5f);
+  float rad = RANDF(20.0f);
+  asteroid->radius = rad + 20.0f;
+  asteroid->color = WHITE;
+
+  PRINTDINIT("Asteroid initialized with x %3.2f y %3.2f xs %3.2f ys %3.2f\n",
+             asteroid->x,
+             asteroid->y,
+             asteroid->xspeed,
+             asteroid->yspeed);
+}
+
+/* Updates asteroid position */
+void asteroid_logic(asteroid_t *asteroid)
+{
+  float old_x = asteroid->x;
+  float new_x = old_x + asteroid->xspeed;
+
+  float old_y = asteroid->y;
+  float new_y = old_y + asteroid->yspeed;
+
+  if (new_y > TOP_SCREEN_HEIGHT) {
+    new_y = 0.0f;
+    PRINTDLOGIC("Asteroid went out of bounds downwards\n");
+  } else if (new_y < 0) {
+    new_y = (float) TOP_SCREEN_HEIGHT;
+    PRINTDLOGIC("Asteroid went out of bounds upwards\n");
+  }
+
+  if (new_x > TOP_SCREEN_WIDTH) {
+    new_x = 0;
+    PRINTDLOGIC("Ship went out of bounds rightwards\n");
+  } else if (new_x < 0) {
+    new_x = (float) TOP_SCREEN_WIDTH;
+    PRINTDLOGIC("Ship went out of bounds leftwards\n");
+  }
+  
+
+  PRINTDLOGIC("Asteroid x %3.2f y %3.2f xs %3.2f xy %3.2f\n",asteroid->x, asteroid->y, asteroid->xspeed,asteroid->yspeed);
+
+  asteroid->x = new_x;
+  asteroid->y = new_y;
+}
+
+/* Draw asteroids on screen */
+void draw_asteroid(asteroid_t *asteroid)
+{
+  u32 clr     = WHITE;
+  float depth = 0.9f;
+
+  C2D_DrawCircle(asteroid->x,
+                 asteroid->y,
+                 depth,
+                 asteroid->radius,
+                 clr,
+                 clr,
+                 clr,
+                 clr);
+  PRINTDRENDER("Draw asteroid X %3.2f Y %3.2f\n", asteroid->x, asteroid->y);
 }
 
 /* Draw player ship as a triangle using 3 vertices */
@@ -124,9 +212,7 @@ void draw_player()
                    clr,
                    depth);
 
-#ifdef DEBUG_RENDER
-  printf("DRAWING PLAYER\tX %3.3f\tY %3.3f\n", player_ship.x, player_ship.y);
-#endif
+  PRINTDRENDER("Draw player \tX %3.3f\tY %3.3f\n", player_ship.x, player_ship.y);
 }
 
 /* Simple processing of player input */
