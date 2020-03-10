@@ -158,19 +158,21 @@ void asteroid_logic(asteroid_t *asteroid)
   float old_y = asteroid->y;
   float new_y = old_y + asteroid->yspeed;
 
-  if (new_y > TOP_SCREEN_HEIGHT) {
-    new_y = 0.0f;
+  float radius = asteroid->radius;
+
+  if (new_y > TOP_SCREEN_HEIGHT + radius) {
+    new_y = - radius;
     PRINTDLOGIC("Asteroid went out of bounds downwards\n");
-  } else if (new_y < 0) {
-    new_y = (float) TOP_SCREEN_HEIGHT;
+  } else if (new_y < 0 - radius) {
+    new_y = (float) TOP_SCREEN_HEIGHT + radius;
     PRINTDLOGIC("Asteroid went out of bounds upwards\n");
   }
 
-  if (new_x > TOP_SCREEN_WIDTH) {
-    new_x = 0;
+  if (new_x > TOP_SCREEN_WIDTH + radius) {
+    new_x = - radius;
     PRINTDLOGIC("Ship went out of bounds rightwards\n");
-  } else if (new_x < 0) {
-    new_x = (float) TOP_SCREEN_WIDTH;
+  } else if (new_x < 0 - radius) {
+    new_x = (float) TOP_SCREEN_WIDTH + radius;
     PRINTDLOGIC("Ship went out of bounds leftwards\n");
   }
   
