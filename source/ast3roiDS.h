@@ -23,12 +23,13 @@
 
 
 // Utility macros
-#define RANDF(a)            (float)rand()/(float)(RAND_MAX/a);
-#define ABS(a)              ((a<0)?(-a):(a))
+#define RANDF(a)            (float)rand()/(float)(RAND_MAX/(a));
+#define ABS(a)              (((a)<0)?(-(a)):(a))
 
 // Gameplay config macros
-#define PLAYER_SAFE_ZONE_RADIUS 20.0f
-#define ASTEROID_NUMBER 10
+#define PLAYER_SAFE_ZONE_RADIUS 60.0f
+#define ASTEROID_NUMBER         10
+#define ASTEROID_MAXSPEED       0.5f
 
 // Debug macros
 #if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) || defined(DEBUG_INIT)

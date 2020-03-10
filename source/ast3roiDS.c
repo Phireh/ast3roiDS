@@ -132,8 +132,12 @@ void init_asteroid(asteroid_t *asteroid)
 
   asteroid->x = initial_x;
   asteroid->y = initial_y;
-  asteroid->xspeed = RANDF(0.5f);
-  asteroid->yspeed = RANDF(0.5f);
+  /* Make speed in range (-maxs,+maxs) */
+  float xs = RANDF(ASTEROID_MAXSPEED * 2);
+  float ys = RANDF(ASTEROID_MAXSPEED * 2);
+  
+  asteroid->xspeed = xs - ASTEROID_MAXSPEED;
+  asteroid->yspeed = ys - ASTEROID_MAXSPEED;
   float rad = RANDF(20.0f);
   asteroid->radius = rad + 20.0f;
   asteroid->color = WHITE;
