@@ -12,7 +12,7 @@ The ast3roiDS.3dsx file is the game executable. It can be opened with a 3DS emul
 # Debugging
 To compile a debug version of the game, pass the relevant enviroment variables to the make program:<br />
 ```$ CFLAGS="-DDEBUG_LOGIC" make```<br />
-For using tools like __gdb__ check the [wiki](/wiki/Debugging/) page.
+For using tools like __gdb__ check the [wiki](/Phireh/ast3roiDS/wiki/Debugging/) page.
 
 # Cleanup
 To erase all build and output files, run:<br />
