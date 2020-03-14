@@ -4,7 +4,7 @@
 player_ship_t     player_ship;
 asteroid_t        asteroids[ASTEROID_NUMBER];
 C3D_RenderTarget *top;
-unsigned int      framecount; // NOTE: PRINTFRAME needs this name to be unchanged
+
 
 /* Quick input summary:
    xinput          : -1 is full turn left, +1 is full turn right
@@ -14,6 +14,7 @@ float             xinput;
 float             yinput;
 float             xinput_sensitivity = 2.0f;
 float             yinput_sensitivity = 0.01f;
+unsigned int      framecount; // NOTE: needed for the time debug macros
 int               game_state = NORMAL_GAMESTATE;
 
 /* Main program */
@@ -37,6 +38,8 @@ int main(int argc, char *argv[])
   /* Main loop */
   while (aptMainLoop())
     {
+      FRAME_START_CHECKPOINT;
+      PRINTFRAME;
       /* Input handling */
       hidScanInput();
       // reset input values each frame
@@ -85,8 +88,10 @@ int main(int argc, char *argv[])
         draw_asteroid(&asteroids[i]);
       C3D_FrameEnd(0);
 
-      PRINTFRAME;
       ++framecount;
+      FRAME_END_CHECKPOINT;
+      PRINTDTIME;
+      FLUSH_DEBUG_OUTPUT;
     }
 
  exit_main_loop:

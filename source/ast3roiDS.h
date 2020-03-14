@@ -25,6 +25,7 @@
 // Utility macros
 #define RANDF(a)            (float)rand()/(float)(RAND_MAX/(a));
 #define ABS(a)              (((a)<0)?(-(a)):(a))
+#define NATSUB(a,b)         (((a-b) < 0) ? 0 : a-b)
 
 // Gameplay config macros
 #define PLAYER_SAFE_ZONE_RADIUS 60.0f
@@ -32,40 +33,61 @@
 #define ASTEROID_MAXSPEED       0.5f
 
 // Debug macros
-#if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) || defined(DEBUG_INIT)
+#if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) || defined(DEBUG_INIT) || defined(DEBUG_TIME)
 #define CHECKDEBUGMODE      consoleInit(GFX_BOTTOM, NULL);
+#define MAX_DSTRING 1024
+char debug_msg[MAX_DSTRING];
+int debug_msg_idx;
+#define REMAINING_DSTRING  NATSUB(MAX_DSTRING,debug_msg_idx)
+#define START_DSTRING (debug_msg + debug_msg_idx)
+#define FLUSH_DEBUG_OUTPUT printf("%s\n",debug_msg);                             \
+      debug_msg_idx = 0
+#define PRINTD(fmt, ...) debug_msg_idx += snprintf(debug_msg, REMAINING_DSTRING, fmt, ##__VA_ARGS__)
 #else
-#define CHECKDEBUGMODE      
+#define CHECKDEBUGMODE
+#define FLUSH_DEBUG_OUTPUT 
 #endif
 
-#if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) && !defined(DEBUG_INIT)
-#define PRINTFRAME          printf("FRAME %d:  ", framecount)
+#if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) || defined(DEBUG_TIME) && !defined(DEBUG_INIT)
+#define PRINTFRAME          printf("FRAME %d:\n", framecount)
 #else
 #define PRINTFRAME
 #endif
 
 #ifdef DEBUG_INPUT
-#define PRINTDINPUT(fmt, ...) printf(fmt, ##__VA_ARGS__)
+#define PRINTDINPUT(fmt, ...) debug_msg_idx += snprintf(START_DSTRING, REMAINING_DSTRING, fmt, ##__VA_ARGS__)
 #else
 #define PRINTDINPUT(fmt, ...) 
 #endif
 
 #ifdef DEBUG_LOGIC
-#define PRINTDLOGIC(fmt, ...) printf(fmt, ##__VA_ARGS__)
+#define PRINTDLOGIC(fmt, ...) debug_msg_idx += snprintf(START_DSTRING, REMAINING_DSTRING, fmt, ##__VA_ARGS__)
 #else
 #define PRINTDLOGIC(fmt, ...)
 #endif
 
 #ifdef DEBUG_RENDER
-#define PRINTDRENDER(fmt, ...) printf(fmt, ##__VA_ARGS__)
+#define PRINTDRENDER(fmt, ...) debug_msg_idx += snprintf(START_DSTRING, REMAINING_DSTRING, fmt, ##__VA_ARGS__)
 #else
 #define PRINTDRENDER(fmt, ...)
 #endif
 
 #ifdef DEBUG_INIT
-#define PRINTDINIT(fmt, ...) printf(fmt, ##__VA_ARGS__)
+#define PRINTDINIT(fmt, ...) debug_msg_idx += snprintf(START_DSTRING, REMAINING_DSTRING, fmt, ##__VA_ARGS__)
 #else
 #define PRINTDINIT(fmt, ...)
+#endif
+
+#ifdef DEBUG_TIME
+u64 d_sf;
+u64 d_ef;
+#define FRAME_START_CHECKPOINT d_sf = osGetTime()
+#define FRAME_END_CHECKPOINT d_ef = osGetTime()
+#define PRINTDTIME debug_msg_idx += snprintf(START_DSTRING, REMAINING_DSTRING, "Time this frame = %2.1lldms\n",(d_ef - d_sf))
+#else
+#define PRINTDTIME
+#define FRAME_START_CHECKPOINT
+#define FRAME_END_CHECKPOINT
 #endif
 
 
