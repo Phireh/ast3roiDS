@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
   // initializes console if necessary
   CHECKDEBUGMODE;
 
+
   top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
 
 
@@ -78,8 +79,8 @@ int main(int argc, char *argv[])
       if (game_state == NORMAL_GAMESTATE) {
         /* Logic */
         player_logic();
-        for (int i = 0; i < ASTEROID_NUMBER; i++)
-          asteroid_logic(&asteroids[i]);
+        for (int i = 0 ; i < ASTEROID_NUMBER; i++)
+          asteroid_logic(&asteroids[i]); 
       } else {
         PRINTDLOGIC("Game is paused\n");
       }
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
         draw_asteroid(&asteroids[i]);
       C3D_FrameEnd(0);
 
-      PRINTFRAME;
+      //PRINTFRAME;
       ++framecount;
     }
 
@@ -149,7 +150,6 @@ void init_asteroid(asteroid_t *asteroid)
   float initial_x;
   float initial_y;
 
-
   /* Find starting position at least X px away from player in both directions */
   do {
     initial_x = RANDF(400);
@@ -189,6 +189,14 @@ void asteroid_logic(asteroid_t *asteroid)
 
   float radius = asteroid->radius;
 
+  float player_posx = player_ship.x;
+  float player_posy = player_ship.y;
+
+  if (ABS(new_x - player_posx) < radius && ABS(new_y - player_posy) < radius){
+    PRINTDCOLLISION("colisión");
+    asteroid->color = RED;
+  }
+
   if (new_y > TOP_SCREEN_HEIGHT + radius) {
     new_y = - radius;
     PRINTDLOGIC("Asteroid went out of bounds downwards\n");
@@ -212,12 +220,12 @@ void asteroid_logic(asteroid_t *asteroid)
   asteroid->y = new_y;
 }
 
+
 /* Draw asteroids on screen */
 void draw_asteroid(asteroid_t *asteroid)
 {
-  u32 clr     = WHITE;
+  u32 clr     = asteroid->color;
   float depth = 0.9f;
-
   C2D_DrawCircle(asteroid->x,
                  asteroid->y,
                  depth,
