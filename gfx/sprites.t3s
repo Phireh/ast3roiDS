@@ -1,0 +1,3 @@
+--atlas -f rgba8888 -z auto
+player_ship_normal.png
+player_ship_boosting.png
