@@ -32,13 +32,13 @@
 #define ASTEROID_MAXSPEED       0.5f
 
 // Debug macros
-#if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) || defined(DEBUG_INIT)
+#if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) || defined(DEBUG_INIT) || defined(DEBUG_COLLISION)
 #define CHECKDEBUGMODE      consoleInit(GFX_BOTTOM, NULL);
 #else
 #define CHECKDEBUGMODE      
 #endif
 
-#if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) && !defined(DEBUG_INIT)
+#if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) || defined(DEBUG_COLLISION) && !defined(DEBUG_INIT)
 #define PRINTFRAME          printf("FRAME %d:  ", framecount)
 #else
 #define PRINTFRAME
@@ -66,6 +66,12 @@
 #define PRINTDINIT(fmt, ...) printf(fmt, ##__VA_ARGS__)
 #else
 #define PRINTDINIT(fmt, ...)
+#endif
+
+#ifdef DEBUG_COLLISION
+#define PRINTDCOLLISION(fmt, ...) printf(fmt, ##__VA_ARGS__)
+#else
+#define PRINTDCOLLISION(fmt, ...) 
 #endif
 
 
