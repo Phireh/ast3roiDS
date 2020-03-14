@@ -15,13 +15,19 @@ float             yinput;
 float             xinput_sensitivity = 2.0f;
 float             yinput_sensitivity = 0.01f;
 int               game_state = NORMAL_GAMESTATE;
+C2D_SpriteSheet   spritesheet;
 
 /* Main program */
 int main(int argc, char *argv[])
 {
+  /* Seed random number generator */
   srand(time(NULL));
+
+  /* Initialize filesystem to load sprites */
+  romfsInit();
+
+  /* Initialize screens */
   gfxInitDefault();
-  
   C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
   C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
   C2D_Prepare();
@@ -31,9 +37,13 @@ int main(int argc, char *argv[])
 
   top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
 
+
+  /* Initialize data structures */
+  init_sprites();
   init_player();
   for (int i = 0; i < ASTEROID_NUMBER; i++)
     init_asteroid(&asteroids[i]);
+  
   /* Main loop */
   while (aptMainLoop())
     {
@@ -96,6 +106,15 @@ int main(int argc, char *argv[])
   return 0;
 }
 
+void init_sprites()
+{
+  spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/sprites.t3x");
+  // TODO: This should be svcBreak(USERBREAK_PANIC) but doesn't seem to work
+  if (!spritesheet) {
+    PRINTDINIT("Could not load spritesheet\n");
+  }
+}
+
 /* Initialize player's ship attributes */
 void init_player()
 {
@@ -106,7 +125,17 @@ void init_player()
   player_ship.angle  = 90.0f;
   player_ship.radius = 10.0f;
   player_ship.color  = RED;
+
+  /* Sprite initialization for graphics */
+  C2D_SpriteFromSheet(&player_ship.sprites[SPRITE_PLAYER_NORMAL], spritesheet, SPRITE_PLAYER_NORMAL);
+  C2D_SpriteSetCenter(&player_ship.sprites[SPRITE_PLAYER_NORMAL], 0.5f, 0.5f);
+
+  // TODO: make this load a second, different sprite
+  C2D_SpriteFromSheet(&player_ship.sprites[SPRITE_PLAYER_BOOSTING], spritesheet, SPRITE_PLAYER_BOOSTING);
+  C2D_SpriteSetCenter(&player_ship.sprites[SPRITE_PLAYER_BOOSTING], 0.5f, 0.5f);
   
+  
+  /* Vertices for nosprite drawing */
   player_ship.vertices[X0] = -player_ship.radius;        // vertex 0
   player_ship.vertices[Y0] =  player_ship.radius;
   player_ship.vertices[X1] =  0.0f;                      // vertex 1
@@ -200,8 +229,16 @@ void draw_asteroid(asteroid_t *asteroid)
   PRINTDRENDER("Draw asteroid X %3.2f Y %3.2f\n", asteroid->x, asteroid->y);
 }
 
+/* Draw player ship as a sprite */
+void draw_player_sprite()
+{
+  C2D_SpriteSetPos(&player_ship.sprites[player_ship.curr_sprite], player_ship.x, player_ship.y);
+  C2D_SpriteSetRotation(&player_ship.sprites[player_ship.curr_sprite], C3D_AngleFromDegrees(-player_ship.angle+90.0f));
+  C2D_DrawSprite(&player_ship.sprites[player_ship.curr_sprite]);
+}
+
 /* Draw player ship as a triangle using 3 vertices */
-void draw_player()
+void draw_player_nosprite()
 { 
   u32   clr   = player_ship.color;
   float depth = 1.0f;
@@ -242,6 +279,9 @@ int process_input(u32 keys_down, u32 keys_held)
   if (input_keys & KEY_CPAD_UP) {
     PRINTDINPUT("Pressed KEY_CPAD_UP\n");
     yinput = 1.0f;
+    player_ship.curr_sprite = SPRITE_PLAYER_BOOSTING; // boosters ON sprite selected
+  } else {
+    player_ship.curr_sprite = SPRITE_PLAYER_NORMAL;   // boosters OFF sprite selected
   }
   if (keys_down & KEY_SELECT) {
     PRINTDINPUT("Pressed KEY_SELECT\n");

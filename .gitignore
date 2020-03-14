@@ -5,6 +5,8 @@
 
 # Ignore build directory for temp files
 build
+# Do not version control the romfs as it gets built each compilation
+romfs
 # Ignore output files
 *.3dsx
 *.elf

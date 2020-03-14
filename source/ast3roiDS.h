@@ -3,13 +3,13 @@
 
 /* Includes */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <3ds.h>
 #include <citro2d.h>
+
+#include <string.h>
 #include <math.h>
 #include <stdlib.h>
+#include <time.h>
 
 /* Defines */
 
@@ -94,6 +94,12 @@ typedef enum {
               TOTAL_GAMESTATE   // 2
 } game_state_t;
 
+typedef enum {
+              SPRITE_PLAYER_NORMAL,       // 0
+              SPRITE_PLAYER_BOOSTING,     // 1
+              SPRITE_PLAYER_TOTAL         // 2
+} spritesheet_idx_t;
+
 typedef struct player_ship_t {
   float x;
   float y;
@@ -103,6 +109,8 @@ typedef struct player_ship_t {
   float radius;
   u32 color;
   float vertices[XY_TOTAL]; // relative to local coordinates
+  C2D_Sprite sprites[SPRITE_PLAYER_TOTAL];
+  unsigned int curr_sprite;
 } player_ship_t;
 
 typedef struct asteroid_t {
@@ -117,14 +125,21 @@ typedef struct asteroid_t {
 
 /* Functions */
 
+void init_sprites(void);
+
 void init_asteroid(asteroid_t *asteroid);
 void asteroid_logic(asteroid_t *asteroid);
 void draw_asteroid(asteroid_t *asteroid);
 
 void init_player();
 void player_logic();
-void draw_player();
+
+void draw_player_sprite(void);
+void draw_player_nosprite(void);
 
 int process_input(u32 keys_down, u32 keys_held);
+
+/* Function pointers */
+void (*draw_player)(void) = draw_player_sprite;
 
 #endif
