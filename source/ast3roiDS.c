@@ -15,7 +15,7 @@ float             yinput;
 float             xinput_sensitivity = 2.0f;
 float             yinput_sensitivity = 0.01f;
 int               game_state = NORMAL_GAMESTATE;
-C2D_SpriteSheet   spritesheet;
+C2D_SpriteSheet   player_spritesheet;
 
 /* Main program */
 int main(int argc, char *argv[])
@@ -109,9 +109,9 @@ int main(int argc, char *argv[])
 
 void init_sprites()
 {
-  spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/sprites.t3x");
+  player_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/player_sprites.t3x");
   // TODO: This should be svcBreak(USERBREAK_PANIC) but doesn't seem to work
-  if (!spritesheet) {
+  if (!player_spritesheet) {
     PRINTDINIT("Could not load spritesheet\n");
   }
 }
@@ -128,11 +128,11 @@ void init_player()
   player_ship.color  = RED;
 
   /* Sprite initialization for graphics */
-  C2D_SpriteFromSheet(&player_ship.sprites[SPRITE_PLAYER_NORMAL], spritesheet, SPRITE_PLAYER_NORMAL);
+  C2D_SpriteFromSheet(&player_ship.sprites[SPRITE_PLAYER_NORMAL], player_spritesheet, SPRITE_PLAYER_NORMAL);
   C2D_SpriteSetCenter(&player_ship.sprites[SPRITE_PLAYER_NORMAL], 0.5f, 0.5f);
 
   // TODO: make this load a second, different sprite
-  C2D_SpriteFromSheet(&player_ship.sprites[SPRITE_PLAYER_BOOSTING], spritesheet, SPRITE_PLAYER_BOOSTING);
+  C2D_SpriteFromSheet(&player_ship.sprites[SPRITE_PLAYER_BOOSTING], player_spritesheet, SPRITE_PLAYER_BOOSTING);
   C2D_SpriteSetCenter(&player_ship.sprites[SPRITE_PLAYER_BOOSTING], 0.5f, 0.5f);
   
   

@@ -128,6 +128,14 @@ typedef struct asteroid_t {
   u32 color;
 } asteroid_t;
 
+typedef struct bullet_t {
+  float x;
+  float y;
+  float xspeed;
+  float yspeed;
+  C2D_Sprite *bullet_sprite;
+} bullet_t;
+
 
 /* Functions */
 
