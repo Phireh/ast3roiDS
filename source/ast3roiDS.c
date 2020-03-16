@@ -19,6 +19,9 @@ C2D_SpriteSheet   player_spritesheet;
 C2D_SpriteSheet   bullet_spritesheet;
 C2D_Sprite        bullet_normal_sprite;
 
+u32               bulletmask; // NOTE: this has to have MAX_BULLETS bits
+bullet_t          bullets[MAX_BULLETS];
+
 /* Main program */
 int main(int argc, char *argv[])
 {
@@ -81,6 +84,7 @@ int main(int argc, char *argv[])
       if (game_state == NORMAL_GAMESTATE) {
         /* Logic */
         player_logic();
+        bullet_logic();
         for (int i = 0 ; i < ASTEROID_NUMBER; i++)
           asteroid_logic(&asteroids[i]); 
       } else {
@@ -91,8 +95,9 @@ int main(int argc, char *argv[])
       C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
       C2D_TargetClear(top, BLACK);
       C2D_SceneBegin(top);
-      
+
       draw_player();
+      draw_bullets();
 
       for (int i = 0; i < ASTEROID_NUMBER; i++)
         draw_asteroid(&asteroids[i]);
@@ -301,6 +306,12 @@ int process_input(u32 keys_down, u32 keys_held)
   } else {
     player_ship.curr_sprite = SPRITE_PLAYER_NORMAL;   // boosters OFF sprite selected
   }
+
+  if (keys_down & KEY_A) {
+    shoot_bullet();
+    PRINTDINPUT("Pressed KEY_A\n");
+  }
+  
   if (keys_down & KEY_SELECT) {
     PRINTDINPUT("Pressed KEY_SELECT\n");
     return EXIT_GAME_INPUT;
@@ -394,4 +405,60 @@ void player_logic()
   player_ship.vertices[X2] = x2; // vertex 2
   player_ship.vertices[Y2] = y2;
   
+}
+
+void shoot_bullet(void)
+{
+  /* Check first free bullet size in array */
+  int i = 0;
+  for (; i < MAX_BULLETS; i++)
+    if (~(bulletmask >> i) & 1) break;
+  PRINTDBULLETS("i %d, mask %#lx, size %d\n", i, bulletmask, sizeof(bulletmask));
+
+  /* If there is none ignore bullet fire */
+  if (i >= sizeof(bulletmask)) return;
+  PRINTDBULLETS("i %d, mask %#lx\n", i, bulletmask);
+  /* Otherwise initialize bullet */
+  bulletmask = bulletmask | (1 << i);
+  bullets[i].x = player_ship.x;
+  bullets[i].y = player_ship.y;
+  float angle = player_ship.angle;
+  bullets[i].angle = angle;
+  /* Check sin and cos this frame */
+  float fsin = sin( ((angle)*M_PI) / 180.0f );
+  float fcos = cos( ((angle)*M_PI) / 180.0f );
+
+
+  bullets[i].xspeed = BULLET_INITIAL_SPEED * fcos;
+  bullets[i].yspeed = BULLET_INITIAL_SPEED * -fsin;
+  bullets[i].sprite = &bullet_normal_sprite;
+}
+
+void bullet_logic(void)
+{
+  int i = 0;
+  for (; i < MAX_BULLETS; i++) {
+    if (bulletmask >> i & 1) {
+      bullets[i].x +=       bullets[i].xspeed;
+      bullets[i].y +=       bullets[i].yspeed;
+
+      /* If bullet went out of bounds we disable it */
+      if (bullets[i].x > TOP_SCREEN_WIDTH  || bullets[i].x < 0 ||
+          bullets[i].y > TOP_SCREEN_HEIGHT || bullets[i].y < 0) {
+        bulletmask = bulletmask & ~(1 << i);
+      }
+    }
+  }
+}
+
+void draw_bullets(void)
+{
+  int i = 0;
+  for (; i < MAX_BULLETS; i++) {
+    if (bulletmask >> i & 1) {
+      C2D_SpriteSetPos(bullets[i].sprite, bullets[i].x, bullets[i].y);
+      C2D_SpriteSetRotation(bullets[i].sprite, C3D_AngleFromDegrees(-bullets[i].angle+90.0f));
+      C2D_DrawSprite(bullets[i].sprite);
+    }
+  }
 }

@@ -15,6 +15,7 @@
 
 #define TOP_SCREEN_WIDTH    400
 #define TOP_SCREEN_HEIGHT   240
+#define MAX_BULLETS         32
 #define WHITE               C2D_Color32(0xFF, 0xFF, 0xFF, 0xFF)
 #define RED                 C2D_Color32(0xFF, 0x00, 0x00, 0xFF)
 #define BLACK               C2D_Color32(0x00, 0x00, 0x00, 0xFF)
@@ -30,15 +31,16 @@
 #define PLAYER_SAFE_ZONE_RADIUS 60.0f
 #define ASTEROID_NUMBER         10
 #define ASTEROID_MAXSPEED       0.5f
+#define BULLET_INITIAL_SPEED    4.0f
 
 // Debug macros
-#if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) || defined(DEBUG_INIT) || defined(DEBUG_COLLISION)
+#if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) || defined(DEBUG_INIT) || defined(DEBUG_COLLISION) || defined(DEBUG_BULLETS)
 #define CHECKDEBUGMODE      consoleInit(GFX_BOTTOM, NULL);
 #else
 #define CHECKDEBUGMODE      
 #endif
 
-#if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) || defined(DEBUG_COLLISION) && !defined(DEBUG_INIT)
+#if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) || defined(DEBUG_COLLISION) || defined(DEBUG_BULLETS) && !defined(DEBUG_INIT)
 #define PRINTFRAME          printf("FRAME %d:  ", framecount)
 #else
 #define PRINTFRAME
@@ -72,6 +74,12 @@
 #define PRINTDCOLLISION(fmt, ...) printf(fmt, ##__VA_ARGS__)
 #else
 #define PRINTDCOLLISION(fmt, ...) 
+#endif
+
+#ifdef DEBUG_BULLETS
+#define PRINTDBULLETS(fmt, ...) printf(fmt, ##__VA_ARGS__)
+#else
+#define PRINTDBULLETS(fmt, ...) 
 #endif
 
 
@@ -138,7 +146,8 @@ typedef struct bullet_t {
   float y;
   float xspeed;
   float yspeed;
-  C2D_Sprite *bullet_sprite;
+  float angle;
+  C2D_Sprite *sprite;
 } bullet_t;
 
 
@@ -155,6 +164,10 @@ void player_logic();
 
 void draw_player_sprite(void);
 void draw_player_nosprite(void);
+
+void shoot_bullet(void);
+void bullet_logic(void);
+void draw_bullets(void);
 
 int process_input(u32 keys_down, u32 keys_held);
 
