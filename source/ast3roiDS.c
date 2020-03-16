@@ -433,11 +433,28 @@ void bullet_logic(void)
   int i = 0;
   for (; i < MAX_BULLETS; i++) {
     if (bulletmask >> i & 1) {
-      bullets[i].x +=       bullets[i].xspeed;
-      bullets[i].y +=       bullets[i].yspeed;
+
+      float bx     = bullets[i].x + bullets[i].xspeed;
+      float by     = bullets[i].y + bullets[i].yspeed;
+      bullets[i].x = bx;
+      bullets[i].y = by;
+
+      /* Check for asteroid hit */
+      // TODO: make this work with a variable number of asteroids
+      for (int j = 0; j < ASTEROID_NUMBER; j++) {
+        float ax   = asteroids[j].x;
+        float ay   = asteroids[j].y;
+        float arad = asteroids[j].radius;
+        if (inside_circle(bx, by, ax, ay, arad)) {
+          PRINTDBULLETS("Bullet hit at %3.2f, %3.2f", bx, by);
+          /* TODO: FX on bullet hit */
+          bulletmask = bulletmask & ~(1 << i);
+          asteroids[j].color = GREEN;
+        }
+      }
 
       /* If bullet went out of bounds we disable it */
-      if (!(inside_top_screen(bullets[i].x, bullets[i].y))) {
+      if (!(inside_top_screen(bx, by))) {
         PRINTDBULLETS("Bullet went out of screen");
         bulletmask = bulletmask & ~(1 << i);
       }

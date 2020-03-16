@@ -18,6 +18,7 @@
 #define MAX_BULLETS         32
 #define WHITE               C2D_Color32(0xFF, 0xFF, 0xFF, 0xFF)
 #define RED                 C2D_Color32(0xFF, 0x00, 0x00, 0xFF)
+#define GREEN               C2D_Color32(0x00, 0xFF, 0x00, 0xFF)
 #define BLACK               C2D_Color32(0x00, 0x00, 0x00, 0xFF)
 #define DPAD                (KEY_CPAD_RIGHT | KEY_CPAD_LEFT | KEY_CPAD_UP | KEY_CPAD_DOWN)
 
@@ -156,7 +157,6 @@ typedef struct bullet_t {
 // Check if point is inside rectangle
 inline int inside_rect(float x, float y, float leftx, float rightx, float downy, float upy)
 {
-  PRINTDBULLETS("->%3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n",x,y,leftx,rightx,downy,upy);
   return x > 0 && y > 0 && rightx - x > leftx && upy - y > downy;
 }
 
