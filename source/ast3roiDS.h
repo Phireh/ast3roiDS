@@ -104,7 +104,12 @@ typedef enum {
               SPRITE_PLAYER_NORMAL,       // 0
               SPRITE_PLAYER_BOOSTING,     // 1
               SPRITE_PLAYER_TOTAL         // 2
-} spritesheet_idx_t;
+} player_spritesheet_idx_t;
+
+typedef enum {
+              SPRITE_BULLET_NORMAL,       // 0
+              SPRITE_BULLET_TOTAL         // 1
+} bullet_spritesheet_idx_t;
 
 typedef struct player_ship_t {
   float x;

@@ -16,6 +16,8 @@ float             xinput_sensitivity = 2.0f;
 float             yinput_sensitivity = 0.01f;
 int               game_state = NORMAL_GAMESTATE;
 C2D_SpriteSheet   player_spritesheet;
+C2D_SpriteSheet   bullet_spritesheet;
+C2D_Sprite        bullet_normal_sprite;
 
 /* Main program */
 int main(int argc, char *argv[])
@@ -111,9 +113,17 @@ void init_sprites()
 {
   player_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/player_sprites.t3x");
   // TODO: This should be svcBreak(USERBREAK_PANIC) but doesn't seem to work
-  if (!player_spritesheet) {
-    PRINTDINIT("Could not load spritesheet\n");
-  }
+  if (!player_spritesheet) 
+    PRINTDINIT("Could not load player spritesheet\n");
+
+      
+  bullet_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/bullet_sprites.t3x");
+  if (!player_spritesheet) 
+      PRINTDINIT("Could not load bullet spritesheet\n");
+
+  C2D_SpriteFromSheet(&bullet_normal_sprite, bullet_spritesheet, SPRITE_BULLET_NORMAL);
+  C2D_SpriteSetCenter(&bullet_normal_sprite, 0.5f, 0.5f);
+
 }
 
 /* Initialize player's ship attributes */
