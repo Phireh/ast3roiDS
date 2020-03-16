@@ -168,11 +168,8 @@ void init_asteroid(asteroid_t *asteroid)
   /* Find starting position at least X px away from player in both directions */
   do {
     initial_x = RANDF(400);
-  } while (ABS(initial_x - player_ship.x) < PLAYER_SAFE_ZONE_RADIUS);
-
-  do {
-    initial_y = RANDF(400);
-  } while (ABS(initial_y - player_ship.y) < PLAYER_SAFE_ZONE_RADIUS);
+    initial_y = RANDF(240);
+  } while (inside_circle(initial_x, initial_y, player_ship.x, player_ship.y, PLAYER_SAFE_ZONE_RADIUS));
 
   asteroid->x = initial_x;
   asteroid->y = initial_y;
@@ -204,11 +201,8 @@ void asteroid_logic(asteroid_t *asteroid)
 
   float radius = asteroid->radius;
 
-  float player_posx = player_ship.x;
-  float player_posy = player_ship.y;
-
-  if (ABS(new_x - player_posx) < radius && ABS(new_y - player_posy) < radius){
-    PRINTDCOLLISION("colisión");
+  if (inside_circle(player_ship.x, player_ship.y, new_x, new_y, radius)) {
+    PRINTDCOLLISION("Collided asteroid on %3.2f, %3.2f\n", player_ship.x, player_ship.y);
     asteroid->color = RED;
   }
 
@@ -340,7 +334,7 @@ void player_logic()
     new_angle -= 360.0f;
   if (new_angle < 0.0f)
     new_angle += 360.0f;
-  
+
   player_ship.angle = new_angle;
 
   PRINTDLOGIC("PLAYER ANGLE %3.2f", player_ship.angle);
@@ -443,8 +437,8 @@ void bullet_logic(void)
       bullets[i].y +=       bullets[i].yspeed;
 
       /* If bullet went out of bounds we disable it */
-      if (bullets[i].x > TOP_SCREEN_WIDTH  || bullets[i].x < 0 ||
-          bullets[i].y > TOP_SCREEN_HEIGHT || bullets[i].y < 0) {
+      if (!(inside_top_screen(bullets[i].x, bullets[i].y))) {
+        PRINTDBULLETS("Bullet went out of screen");
         bulletmask = bulletmask & ~(1 << i);
       }
     }

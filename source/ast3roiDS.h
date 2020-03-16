@@ -151,6 +151,33 @@ typedef struct bullet_t {
 } bullet_t;
 
 
+/* Inline functions */
+
+// Check if point is inside rectangle
+inline int inside_rect(float x, float y, float leftx, float rightx, float downy, float upy)
+{
+  PRINTDBULLETS("->%3.2f, %3.2f, %3.2f, %3.2f, %3.2f, %3.2f\n",x,y,leftx,rightx,downy,upy);
+  return x > 0 && y > 0 && rightx - x > leftx && upy - y > downy;
+}
+
+// Check if point is inside circle
+inline int inside_circle(float x, float y, float cx, float cy, float crad)
+{
+  return sqrt((cx - x) * (cx - x) + (cy - y) * (cy -y)) < crad;
+}
+
+// Limits a number inside range [floor, ceiling]
+inline float clampf(float f, float floor, float ceiling)
+{
+  return f < floor ? floor : (f > ceiling ? ceiling : f);
+}
+
+// Check if point is inside top screen
+inline int inside_top_screen(float x, float y)
+{
+  return inside_rect(x, y, 0.0f, TOP_SCREEN_WIDTH, 0.0f, TOP_SCREEN_HEIGHT);
+}
+
 /* Functions */
 
 void init_sprites(void);
