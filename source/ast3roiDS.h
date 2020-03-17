@@ -16,6 +16,7 @@
 #define TOP_SCREEN_WIDTH    400
 #define TOP_SCREEN_HEIGHT   240
 #define MAX_BULLETS         32
+#define MAX_ASTEROIDS       32
 #define WHITE               C2D_Color32(0xFF, 0xFF, 0xFF, 0xFF)
 #define RED                 C2D_Color32(0xFF, 0x00, 0x00, 0xFF)
 #define GREEN               C2D_Color32(0x00, 0xFF, 0x00, 0xFF)
@@ -27,12 +28,18 @@
 // Utility macros
 #define RANDF(a)            (float)rand()/(float)(RAND_MAX/(a));
 #define ABS(a)              (((a)<0)?(-(a)):(a))
+#define NORM(a,b)       ((a)/(b))
 
 // Gameplay config macros
 #define PLAYER_SAFE_ZONE_RADIUS 60.0f
 #define ASTEROID_NUMBER         10
 #define ASTEROID_MAXSPEED       0.5f
 #define BULLET_INITIAL_SPEED    4.0f
+#define MAX_ASTEROID_SIZE       40.0f
+#define ASTEROID_BIG_RATIO      0.8f
+#define ASTEROID_NORMAL_RATIO   0.5f
+#define ASTEROID_SMALL_RATIO    0.2f
+
 
 // Debug macros
 #if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) || defined(DEBUG_INIT) || defined(DEBUG_COLLISION) || defined(DEBUG_BULLETS)
@@ -120,6 +127,13 @@ typedef enum {
               SPRITE_BULLET_TOTAL         // 1
 } bullet_spritesheet_idx_t;
 
+typedef enum {
+              ASTEROID_SIZE_SMALL,        // 0
+              ASTEROID_SIZE_NORMAL,       // 1
+              ASTEROID_SIZE_BIG,          // 2
+              ASTEROID_SIZE_TOTAL         // 3
+} asteroid_size_t;
+
 typedef struct player_ship_t {
   float x;
   float y;
@@ -178,13 +192,23 @@ inline int inside_top_screen(float x, float y)
   return inside_rect(x, y, 0.0f, TOP_SCREEN_WIDTH, 0.0f, TOP_SCREEN_HEIGHT);
 }
 
+inline int asteroid_size(float radius)
+{
+  float relative_size = NORM(radius, MAX_ASTEROID_SIZE);
+  if      (relative_size >= ASTEROID_BIG_RATIO)    return ASTEROID_SIZE_BIG;
+  else if (relative_size >= ASTEROID_NORMAL_RATIO) return ASTEROID_SIZE_NORMAL;
+  else                                             return ASTEROID_SIZE_SMALL;
+}
+
 /* Functions */
 
 void init_sprites(void);
 
-void init_asteroid(asteroid_t *asteroid);
-void asteroid_logic(asteroid_t *asteroid);
-void draw_asteroid(asteroid_t *asteroid);
+void init_asteroids(int n);
+void asteroid_logic();
+void draw_asteroids();
+void spawn_asteroids(float x, float y, asteroid_size_t size, int n);
+void break_asteroid(asteroid_t *asteroid, int idx);
 
 void init_player();
 void player_logic();

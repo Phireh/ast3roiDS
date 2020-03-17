@@ -2,7 +2,8 @@
 
 /* Globals */
 player_ship_t     player_ship;
-asteroid_t        asteroids[ASTEROID_NUMBER];
+u32               asteroidmask;
+asteroid_t        asteroids[MAX_ASTEROIDS];
 C3D_RenderTarget *top;
 unsigned int      framecount; // NOTE: PRINTFRAME needs this name to be unchanged
 
@@ -47,8 +48,7 @@ int main(int argc, char *argv[])
   /* Initialize data structures */
   init_sprites();
   init_player();
-  for (int i = 0; i < ASTEROID_NUMBER; i++)
-    init_asteroid(&asteroids[i]);
+  init_asteroids(ASTEROID_NUMBER);
   
   /* Main loop */
   while (aptMainLoop())
@@ -85,8 +85,7 @@ int main(int argc, char *argv[])
         /* Logic */
         player_logic();
         bullet_logic();
-        for (int i = 0 ; i < ASTEROID_NUMBER; i++)
-          asteroid_logic(&asteroids[i]); 
+        asteroid_logic(); 
       } else {
         PRINTDLOGIC("Game is paused\n");
       }
@@ -98,9 +97,7 @@ int main(int argc, char *argv[])
 
       draw_player();
       draw_bullets();
-
-      for (int i = 0; i < ASTEROID_NUMBER; i++)
-        draw_asteroid(&asteroids[i]);
+      draw_asteroids();
       C3D_FrameEnd(0);
 
       //PRINTFRAME;
@@ -160,90 +157,111 @@ void init_player()
   player_ship.vertices[Y2] =  player_ship.radius;
 }
 
-void init_asteroid(asteroid_t *asteroid)
+void init_asteroids(int n)
 {
-  float initial_x;
-  float initial_y;
+  asteroid_t *asteroid;
+  for (int i = 0; i < n; i++) {
+    /* Check for free space in the asteroid mask */
+    int j = 0;
+    for (; j < MAX_ASTEROIDS; j++)
+      if (~(asteroidmask >> j) & 1) break;
 
+    /* If we already have the max number ignore petition */
+    if (i >= MAX_ASTEROIDS) return;
+    /* Reserve place in mask */
+    asteroidmask = asteroidmask | (1 << j);
+    
+    asteroid = &asteroids[j];
+    
+    float initial_x;
+    float initial_y;
   /* Find starting position at least X px away from player in both directions */
-  do {
-    initial_x = RANDF(400);
-    initial_y = RANDF(240);
-  } while (inside_circle(initial_x, initial_y, player_ship.x, player_ship.y, PLAYER_SAFE_ZONE_RADIUS));
-
-  asteroid->x = initial_x;
-  asteroid->y = initial_y;
-  /* Make speed in range (-maxs,+maxs) */
-  float xs = RANDF(ASTEROID_MAXSPEED * 2);
-  float ys = RANDF(ASTEROID_MAXSPEED * 2);
+    do {
+      initial_x = RANDF(400);
+      initial_y = RANDF(240);
+    } while (inside_circle(initial_x, initial_y, player_ship.x, player_ship.y, PLAYER_SAFE_ZONE_RADIUS));
+    asteroid->x = initial_x;
+    asteroid->y = initial_y;
+    
+    /* Make speed in range (-maxs,+maxs) */
+    float xs = RANDF(ASTEROID_MAXSPEED * 2);
+    float ys = RANDF(ASTEROID_MAXSPEED * 2);
   
-  asteroid->xspeed = xs - ASTEROID_MAXSPEED;
-  asteroid->yspeed = ys - ASTEROID_MAXSPEED;
-  float rad = RANDF(20.0f);
-  asteroid->radius = rad + 20.0f;
-  asteroid->color = WHITE;
-
-  PRINTDINIT("Asteroid initialized with x %3.2f y %3.2f xs %3.2f ys %3.2f\n",
-             asteroid->x,
-             asteroid->y,
-             asteroid->xspeed,
-             asteroid->yspeed);
+    asteroid->xspeed = xs - ASTEROID_MAXSPEED;
+    asteroid->yspeed = ys - ASTEROID_MAXSPEED;
+    float rad = RANDF(20.0f);
+    asteroid->radius = rad + (MAX_ASTEROID_SIZE/2);
+    asteroid->color = WHITE;
+  }
+  PRINTDINIT("Initial AST mask %#lx\n", asteroidmask);
 }
 
 /* Updates asteroid position */
-void asteroid_logic(asteroid_t *asteroid)
+void asteroid_logic(void)
 {
-  float old_x = asteroid->x;
-  float new_x = old_x + asteroid->xspeed;
+  asteroid_t *asteroid;
+  /* Ignore inactive asteroids */
+  int i = 0;
+  for (; i < MAX_ASTEROIDS; i++) {
+    if (asteroidmask >> i & 1) {
+      asteroid = &asteroids[i];
+      float old_x = asteroid->x;
+      float new_x = old_x + asteroid->xspeed;
 
-  float old_y = asteroid->y;
-  float new_y = old_y + asteroid->yspeed;
+      float old_y = asteroid->y;
+      float new_y = old_y + asteroid->yspeed;
 
-  float radius = asteroid->radius;
+      float radius = asteroid->radius;
 
-  if (inside_circle(player_ship.x, player_ship.y, new_x, new_y, radius)) {
-    PRINTDCOLLISION("Collided asteroid on %3.2f, %3.2f\n", player_ship.x, player_ship.y);
-    asteroid->color = RED;
+      if (inside_circle(player_ship.x, player_ship.y, new_x, new_y, radius)) {
+        PRINTDCOLLISION("Collided asteroid on %3.2f, %3.2f\n", player_ship.x, player_ship.y);
+        asteroid->color = RED;
+      }
+
+      if (new_y > TOP_SCREEN_HEIGHT + radius) {
+        new_y = - radius;
+        PRINTDLOGIC("Asteroid went out of bounds downwards\n");
+      } else if (new_y < 0 - radius) {
+        new_y = (float) TOP_SCREEN_HEIGHT + radius;
+        PRINTDLOGIC("Asteroid went out of bounds upwards\n");
+      }
+
+      if (new_x > TOP_SCREEN_WIDTH + radius) {
+        new_x = - radius;
+        PRINTDLOGIC("Asteroid went out of bounds rightwards\n");
+      } else if (new_x < 0 - radius) {
+        new_x = (float) TOP_SCREEN_WIDTH + radius;
+        PRINTDLOGIC("Asteroid went out of bounds leftwards\n");
+      }
+
+      asteroid->x = new_x;
+      asteroid->y = new_y;
+    }
   }
-
-  if (new_y > TOP_SCREEN_HEIGHT + radius) {
-    new_y = - radius;
-    PRINTDLOGIC("Asteroid went out of bounds downwards\n");
-  } else if (new_y < 0 - radius) {
-    new_y = (float) TOP_SCREEN_HEIGHT + radius;
-    PRINTDLOGIC("Asteroid went out of bounds upwards\n");
-  }
-
-  if (new_x > TOP_SCREEN_WIDTH + radius) {
-    new_x = - radius;
-    PRINTDLOGIC("Ship went out of bounds rightwards\n");
-  } else if (new_x < 0 - radius) {
-    new_x = (float) TOP_SCREEN_WIDTH + radius;
-    PRINTDLOGIC("Ship went out of bounds leftwards\n");
-  }
-  
-
-  PRINTDLOGIC("Asteroid x %3.2f y %3.2f xs %3.2f xy %3.2f\n",asteroid->x, asteroid->y, asteroid->xspeed,asteroid->yspeed);
-
-  asteroid->x = new_x;
-  asteroid->y = new_y;
 }
 
 
 /* Draw asteroids on screen */
-void draw_asteroid(asteroid_t *asteroid)
+void draw_asteroids(void)
 {
-  u32 clr     = asteroid->color;
+  u32 clr;
   float depth = 0.9f;
-  C2D_DrawCircle(asteroid->x,
-                 asteroid->y,
-                 depth,
-                 asteroid->radius,
-                 clr,
-                 clr,
-                 clr,
-                 clr);
-  PRINTDRENDER("Draw asteroid X %3.2f Y %3.2f\n", asteroid->x, asteroid->y);
+  asteroid_t *asteroid;
+  for (int i = 0; i < MAX_ASTEROIDS; i++) {
+    if (asteroidmask >> i & 1) {
+      asteroid = &asteroids[i];
+      clr      = asteroid->color;
+      C2D_DrawCircle(asteroid->x,
+                     asteroid->y,
+                     depth,
+                     asteroid->radius,
+                     clr,
+                     clr,
+                     clr,
+                     clr);
+      PRINTDRENDER("Draw asteroid X %3.2f Y %3.2f\n", asteroid->x, asteroid->y);
+    }
+  }
 }
 
 /* Draw player ship as a sprite */
@@ -410,7 +428,7 @@ void shoot_bullet(void)
   PRINTDBULLETS("i %d, mask %#lx, size %d\n", i, bulletmask, sizeof(bulletmask));
 
   /* If there is none ignore bullet fire */
-  if (i >= sizeof(bulletmask)) return;
+  if (i >= MAX_BULLETS) return;
   PRINTDBULLETS("i %d, mask %#lx\n", i, bulletmask);
   /* Otherwise initialize bullet */
   bulletmask = bulletmask | (1 << i);
@@ -433,30 +451,33 @@ void bullet_logic(void)
   int i = 0;
   for (; i < MAX_BULLETS; i++) {
     if (bulletmask >> i & 1) {
-
       float bx     = bullets[i].x + bullets[i].xspeed;
       float by     = bullets[i].y + bullets[i].yspeed;
       bullets[i].x = bx;
       bullets[i].y = by;
 
       /* Check for asteroid hit */
-      // TODO: make this work with a variable number of asteroids
-      for (int j = 0; j < ASTEROID_NUMBER; j++) {
-        float ax   = asteroids[j].x;
-        float ay   = asteroids[j].y;
-        float arad = asteroids[j].radius;
-        if (inside_circle(bx, by, ax, ay, arad)) {
-          PRINTDBULLETS("Bullet hit at %3.2f, %3.2f", bx, by);
-          /* TODO: FX on bullet hit */
-          bulletmask = bulletmask & ~(1 << i);
-          asteroids[j].color = GREEN;
-        }
-      }
 
-      /* If bullet went out of bounds we disable it */
-      if (!(inside_top_screen(bx, by))) {
-        PRINTDBULLETS("Bullet went out of screen");
-        bulletmask = bulletmask & ~(1 << i);
+      // Ignore inactive asteroids
+      int j = 0;
+      for (; j < MAX_ASTEROIDS; j++) {
+        if (asteroidmask >> j & 1) {
+          float ax   = asteroids[j].x;
+          float ay   = asteroids[j].y;
+          float arad = asteroids[j].radius;
+          if (inside_circle(bx, by, ax, ay, arad)) {
+            PRINTDBULLETS("Bullet hit at %3.2f, %3.2f\n", bx, by);
+            /* TODO: FX on bullet hit */
+            bulletmask = bulletmask & ~(1 << i);
+            break_asteroid(&asteroids[j], j);
+          }
+        }
+
+        /* If bullet went out of bounds we disable it */
+        if (!(inside_top_screen(bx, by))) {
+          PRINTDBULLETS("Bullet went out of screen");
+          bulletmask &= ~(1 << i);
+        }
       }
     }
   }
@@ -471,5 +492,56 @@ void draw_bullets(void)
       C2D_SpriteSetRotation(bullets[i].sprite, C3D_AngleFromDegrees(-bullets[i].angle+90.0f));
       C2D_DrawSprite(bullets[i].sprite);
     }
+  }
+}
+
+void break_asteroid(asteroid_t *asteroid, int idx)
+{
+  /* Check asteroid type */
+  int size = asteroid_size(asteroid->radius);
+  /* Free asteroid struct position */
+  asteroidmask &= ~(1 << idx);
+  if (size > ASTEROID_SIZE_SMALL) {
+    spawn_asteroids(asteroid->x, asteroid->y, size-1, 2);
+  }
+}
+
+void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
+{
+  asteroid_t *asteroid;
+  for (int i = 0; i < n; i++) {
+    /* Look for free positions in array */
+    int j = 0;
+    for (; j < MAX_ASTEROIDS; j++)
+      if (~(asteroidmask >> j) & 1) break;
+
+    /* If there are none do nothing */
+    if (j >= MAX_ASTEROIDS) return;
+
+    /* Reserve space in mask */
+    asteroidmask |= (1 << j);
+    
+    asteroid = &asteroids[j];
+
+    asteroid->x = x;
+    asteroid->y = y;
+    
+    /* Make speed in range (-maxs,+maxs) */
+    float xs = RANDF(ASTEROID_MAXSPEED * 2);
+    float ys = RANDF(ASTEROID_MAXSPEED * 2);
+
+    asteroid->xspeed = xs - ASTEROID_MAXSPEED;
+    asteroid->yspeed = ys - ASTEROID_MAXSPEED;
+    
+    float rad = 0.0f;
+    if (size == ASTEROID_SIZE_BIG) {
+      rad = MAX_ASTEROID_SIZE*ASTEROID_BIG_RATIO;
+    } else if (size == ASTEROID_SIZE_NORMAL) {
+      rad = MAX_ASTEROID_SIZE*ASTEROID_NORMAL_RATIO;
+    } else if (size == ASTEROID_SIZE_SMALL) {
+      rad = MAX_ASTEROID_SIZE*ASTEROID_SMALL_RATIO;
+    }
+    asteroid->radius = rad;
+    asteroid->color = WHITE;
   }
 }
