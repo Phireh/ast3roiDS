@@ -32,6 +32,7 @@
 
 // Gameplay config macros
 #define PLAYER_SAFE_ZONE_RADIUS 60.0f
+#define PLAYER_STARTING_HP      3
 #define ASTEROID_NUMBER         10
 #define ASTEROID_MAXSPEED       0.5f
 #define BULLET_INITIAL_SPEED    4.0f
@@ -39,6 +40,7 @@
 #define ASTEROID_BIG_RATIO      0.8f
 #define ASTEROID_NORMAL_RATIO   0.5f
 #define ASTEROID_SMALL_RATIO    0.2f
+#define GRACE_PERIOD_AFTER_HIT  30
 
 
 // Debug macros
@@ -141,6 +143,7 @@ typedef struct player_ship_t {
   float yspeed;
   float angle;
   float radius;
+  int health;
   u32 color;
   float vertices[XY_TOTAL]; // relative to local coordinates
   C2D_Sprite sprites[SPRITE_PLAYER_TOTAL];
@@ -221,6 +224,7 @@ void bullet_logic(void);
 void draw_bullets(void);
 
 int process_input(u32 keys_down, u32 keys_held);
+void reset_game(void);
 
 /* Function pointers */
 void (*draw_player)(void) = draw_player_sprite;

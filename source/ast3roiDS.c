@@ -6,6 +6,7 @@ u32               asteroidmask;
 asteroid_t        asteroids[MAX_ASTEROIDS];
 C3D_RenderTarget *top;
 unsigned int      framecount; // NOTE: PRINTFRAME needs this name to be unchanged
+unsigned int      last_hit_frame;
 
 /* Quick input summary:
    xinput          : -1 is full turn left, +1 is full turn right
@@ -85,7 +86,8 @@ int main(int argc, char *argv[])
         /* Logic */
         player_logic();
         bullet_logic();
-        asteroid_logic(); 
+        asteroid_logic();
+        ++framecount;
       } else {
         PRINTDLOGIC("Game is paused\n");
       }
@@ -99,9 +101,6 @@ int main(int argc, char *argv[])
       draw_bullets();
       draw_asteroids();
       C3D_FrameEnd(0);
-
-      //PRINTFRAME;
-      ++framecount;
     }
 
  exit_main_loop:
@@ -131,12 +130,13 @@ void init_sprites()
 /* Initialize player's ship attributes */
 void init_player()
 {
-  player_ship.x      = 200.0f;
-  player_ship.y      = 120.0f;
+  player_ship.x      = TOP_SCREEN_WIDTH/2;
+  player_ship.y      = TOP_SCREEN_HEIGHT/2;
   player_ship.yspeed = 0.0f;
   player_ship.xspeed = 0.0f;
   player_ship.angle  = 90.0f;
   player_ship.radius = 10.0f;
+  player_ship.health = PLAYER_STARTING_HP;
   player_ship.color  = RED;
 
   /* Sprite initialization for graphics */
@@ -215,7 +215,13 @@ void asteroid_logic(void)
 
       if (inside_circle(player_ship.x, player_ship.y, new_x, new_y, radius)) {
         PRINTDCOLLISION("Collided asteroid on %3.2f, %3.2f\n", player_ship.x, player_ship.y);
-        asteroid->color = RED;
+
+        /* Only hit player once per grace period */
+        if (framecount - last_hit_frame > GRACE_PERIOD_AFTER_HIT) {
+          player_ship.health--;
+          asteroid->color = RED;
+        }
+        last_hit_frame = framecount;
       }
 
       if (new_y > TOP_SCREEN_HEIGHT + radius) {
@@ -339,6 +345,11 @@ int process_input(u32 keys_down, u32 keys_held)
 void player_logic()
 {
 
+  /* If player is dead, reset game and return */
+  // TODO: game-over screen and better things here
+  if (player_ship.health == 0)
+    reset_game();
+  
   /* Apply input sensitivity */
   xinput = xinput * xinput_sensitivity;
   yinput = yinput * yinput_sensitivity;
@@ -544,4 +555,14 @@ void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
     asteroid->radius = rad;
     asteroid->color = WHITE;
   }
+}
+
+void reset_game(void)
+{
+  asteroidmask = 0;
+  bulletmask = 0;
+  init_player();
+  init_asteroids(ASTEROID_NUMBER);
+  framecount = 0;
+  last_hit_frame = 0;
 }
