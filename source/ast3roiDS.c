@@ -7,6 +7,9 @@ asteroid_t        asteroids[MAX_ASTEROIDS];
 C3D_RenderTarget *top;
 unsigned int      framecount; // NOTE: PRINTFRAME needs this name to be unchanged
 unsigned int      last_hit_frame;
+C2D_Text          score;
+C2D_TextBuf       textBuffer;
+u32               text_flags;
 
 /* Quick input summary:
    xinput          : -1 is full turn left, +1 is full turn right
@@ -100,7 +103,9 @@ int main(int argc, char *argv[])
       draw_player();
       draw_bullets();
       draw_asteroids();
+      draw_score();
       C3D_FrameEnd(0);
+      
     }
 
  exit_main_loop:
@@ -555,6 +560,14 @@ void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
     asteroid->radius = rad;
     asteroid->color = WHITE;
   }
+}
+
+void draw_score()
+{
+  size_t s = strlen("Score: ");
+  textBuffer = C2D_TextBufNew(s);
+  C2D_TextParse(&score, textBuffer, "Score: ");
+  C2D_DrawText(&score, text_flags, 5.0f, 5.0f, 0.0f, 1.0f, 1.0f);
 }
 
 void reset_game(void)
