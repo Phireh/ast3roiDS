@@ -5,11 +5,11 @@ player_ship_t     player_ship;
 u32               asteroidmask;
 asteroid_t        asteroids[MAX_ASTEROIDS];
 C3D_RenderTarget *top;
+C3D_RenderTarget *bottom;
 unsigned int      framecount; // NOTE: PRINTFRAME needs this name to be unchanged
 unsigned int      last_hit_frame;
 C2D_Text          score;
 C2D_TextBuf       textBuffer;
-u32               text_flags;
 
 /* Quick input summary:
    xinput          : -1 is full turn left, +1 is full turn right
@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
 
 
   top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
+  bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
 
 
   /* Initialize data structures */
@@ -95,14 +96,20 @@ int main(int argc, char *argv[])
         PRINTDLOGIC("Game is paused\n");
       }
 
-      /* Rendering */
+      /** Rendering **/
       C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+      /* Draw to top screen */
       C2D_TargetClear(top, BLACK);
       C2D_SceneBegin(top);
 
       draw_player();
       draw_bullets();
       draw_asteroids();
+      C2D_Flush();
+
+      /* Draw to bottom screen */
+      C2D_TargetClear(bottom, BLACK);
+      C2D_SceneBegin(bottom);
       draw_score();
       C3D_FrameEnd(0);
       
@@ -562,12 +569,12 @@ void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
   }
 }
 
-void draw_score()
+void draw_score(void)
 {
   size_t s = strlen("Score: ");
   textBuffer = C2D_TextBufNew(s);
-  C2D_TextParse(&score, textBuffer, "Score: ");
-  C2D_DrawText(&score, text_flags, 5.0f, 5.0f, 0.0f, 1.0f, 1.0f);
+  if(!C2D_TextParse(&score, textBuffer, "Score: ")) exit(1);
+  C2D_DrawText(&score, C2D_WithColor, 5.0f, 5.0f, 0.0f, 1.0f, 1.0f, WHITE);
 }
 
 void reset_game(void)

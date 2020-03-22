@@ -225,6 +225,7 @@ void draw_bullets(void);
 
 int process_input(u32 keys_down, u32 keys_held);
 void reset_game(void);
+void draw_score(void);
 
 /* Function pointers */
 void (*draw_player)(void) = draw_player_sprite;
