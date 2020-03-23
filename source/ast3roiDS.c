@@ -6,6 +6,7 @@ u32               asteroidmask;
 asteroid_t        asteroids[MAX_ASTEROIDS];
 C3D_RenderTarget *top;
 C3D_RenderTarget *bottom;
+int               score;
 unsigned int      framecount; // NOTE: PRINTFRAME needs this name to be unchanged
 unsigned int      last_hit_frame;
 C2D_Text          score;
@@ -44,7 +45,6 @@ int main(int argc, char *argv[])
 
   // initializes console if necessary
   CHECKDEBUGMODE;
-
 
   top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
   bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
