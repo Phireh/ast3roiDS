@@ -17,6 +17,7 @@
 #define TOP_SCREEN_HEIGHT   240
 #define MAX_BULLETS         32
 #define MAX_ASTEROIDS       32
+#define SCORE_TEXT_LENGTH   64
 #define WHITE               C2D_Color32(0xFF, 0xFF, 0xFF, 0xFF)
 #define RED                 C2D_Color32(0xFF, 0x00, 0x00, 0xFF)
 #define GREEN               C2D_Color32(0x00, 0xFF, 0x00, 0xFF)
@@ -41,6 +42,9 @@
 #define ASTEROID_NORMAL_RATIO   0.5f
 #define ASTEROID_SMALL_RATIO    0.2f
 #define GRACE_PERIOD_AFTER_HIT  30
+#define ASTEROID_SMALL_SCORE    50
+#define ASTEROID_NORMAL_SCORE   100
+#define ASTEROID_BIG_SCORE      200
 
 
 // Debug macros

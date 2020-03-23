@@ -9,8 +9,8 @@ C3D_RenderTarget *bottom;
 int               score;
 unsigned int      framecount; // NOTE: PRINTFRAME needs this name to be unchanged
 unsigned int      last_hit_frame;
-C2D_Text          score;
-C2D_TextBuf       textBuffer;
+C2D_Text          score_text;
+C2D_TextBuf       score_text_buffer;    
 
 /* Quick input summary:
    xinput          : -1 is full turn left, +1 is full turn right
@@ -527,6 +527,20 @@ void break_asteroid(asteroid_t *asteroid, int idx)
   if (size > ASTEROID_SIZE_SMALL) {
     spawn_asteroids(asteroid->x, asteroid->y, size-1, 2);
   }
+  /* Increment score based on asteroid size */
+  switch (size) {
+  case ASTEROID_SIZE_SMALL:
+    score += ASTEROID_SMALL_SCORE;
+    break;
+  case ASTEROID_SIZE_NORMAL:
+    score += ASTEROID_NORMAL_SCORE;
+    break;
+  case ASTEROID_SIZE_BIG:
+    score += ASTEROID_BIG_SCORE;
+    break;
+  default:
+    break;
+  }
 }
 
 void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
@@ -571,18 +585,22 @@ void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
 
 void draw_score(void)
 {
-  size_t s = strlen("Score: ");
-  textBuffer = C2D_TextBufNew(s);
-  if(!C2D_TextParse(&score, textBuffer, "Score: ")) exit(1);
-  C2D_DrawText(&score, C2D_WithColor, 5.0f, 5.0f, 0.0f, 1.0f, 1.0f, WHITE);
+  char buf[SCORE_TEXT_LENGTH];
+  sprintf(buf, "Score: %d", score);
+  
+  score_text_buffer = C2D_TextBufNew(SCORE_TEXT_LENGTH);
+  C2D_TextParse(&score_text, score_text_buffer, buf);
+  C2D_DrawText(&score_text, C2D_WithColor, 5.0f, 5.0f, 0.0f, 1.0f, 1.0f, WHITE);
 }
 
 void reset_game(void)
 {
   asteroidmask = 0;
   bulletmask = 0;
-  init_player();
-  init_asteroids(ASTEROID_NUMBER);
   framecount = 0;
   last_hit_frame = 0;
+  score = 0;
+
+  init_player();
+  init_asteroids(ASTEROID_NUMBER);
 }
