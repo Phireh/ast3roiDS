@@ -135,6 +135,11 @@ typedef enum {
 } bullet_spritesheet_idx_t;
 
 typedef enum {
+              SPRITE_BACKGROUND_STATIC,   // 0
+              SPRITE_BACKGROUND_TOTAL     // 1
+} background_spritesheet_idx_t;
+
+typedef enum {
               ASTEROID_SIZE_SMALL,        // 0
               ASTEROID_SIZE_NORMAL,       // 1
               ASTEROID_SIZE_BIG,          // 2
@@ -227,6 +232,8 @@ void draw_player_nosprite(void);
 void shoot_bullet(void);
 void bullet_logic(void);
 void draw_bullets(void);
+
+void draw_background_static(C2D_Sprite *background);
 
 int process_input(u32 keys_down, u32 keys_held);
 void reset_game(void);

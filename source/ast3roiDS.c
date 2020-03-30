@@ -23,7 +23,9 @@ float             yinput_sensitivity = 0.01f;
 int               game_state = NORMAL_GAMESTATE;
 C2D_SpriteSheet   player_spritesheet;
 C2D_SpriteSheet   bullet_spritesheet;
+C2D_SpriteSheet   background_spritesheet;
 C2D_Sprite        bullet_normal_sprite;
+C2D_Sprite        background_static_sprite;
 
 u32               bulletmask; // NOTE: this has to have MAX_BULLETS bits
 bullet_t          bullets[MAX_BULLETS];
@@ -102,6 +104,7 @@ int main(int argc, char *argv[])
       C2D_TargetClear(top, BLACK);
       C2D_SceneBegin(top);
 
+      draw_background_static(&background_static_sprite);
       draw_player();
       draw_bullets();
       draw_asteroids();
@@ -129,13 +132,19 @@ void init_sprites()
   if (!player_spritesheet) 
     PRINTDINIT("Could not load player spritesheet\n");
 
-      
   bullet_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/bullet_sprites.t3x");
   if (!player_spritesheet) 
       PRINTDINIT("Could not load bullet spritesheet\n");
 
+  background_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/background_sprites.t3x");
+  if (!background_spritesheet)
+    PRINTDINIT("Could not load background spritesheet\n");
+
   C2D_SpriteFromSheet(&bullet_normal_sprite, bullet_spritesheet, SPRITE_BULLET_NORMAL);
   C2D_SpriteSetCenter(&bullet_normal_sprite, 0.5f, 0.5f);
+
+  C2D_SpriteFromSheet(&background_static_sprite, background_spritesheet, SPRITE_BACKGROUND_STATIC);
+  C2D_SpriteSetCenter(&background_static_sprite, 0.5f, 0.5f);
 
 }
 
@@ -155,7 +164,6 @@ void init_player()
   C2D_SpriteFromSheet(&player_ship.sprites[SPRITE_PLAYER_NORMAL], player_spritesheet, SPRITE_PLAYER_NORMAL);
   C2D_SpriteSetCenter(&player_ship.sprites[SPRITE_PLAYER_NORMAL], 0.5f, 0.5f);
 
-  // TODO: make this load a second, different sprite
   C2D_SpriteFromSheet(&player_ship.sprites[SPRITE_PLAYER_BOOSTING], player_spritesheet, SPRITE_PLAYER_BOOSTING);
   C2D_SpriteSetCenter(&player_ship.sprites[SPRITE_PLAYER_BOOSTING], 0.5f, 0.5f);
   
@@ -591,6 +599,13 @@ void draw_score(void)
   score_text_buffer = C2D_TextBufNew(SCORE_TEXT_LENGTH);
   C2D_TextParse(&score_text, score_text_buffer, buf);
   C2D_DrawText(&score_text, C2D_WithColor, 5.0f, 5.0f, 0.0f, 1.0f, 1.0f, WHITE);
+}
+
+/* Draw static background sprite, we assume that its center is at 0.5, 0.5 */
+void draw_background_static(C2D_Sprite *background)
+{
+  C2D_SpriteSetPos(background, TOP_SCREEN_WIDTH/2, TOP_SCREEN_HEIGHT/2);
+  C2D_DrawSprite(background);
 }
 
 void reset_game(void)
