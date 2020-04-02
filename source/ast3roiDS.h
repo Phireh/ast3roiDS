@@ -140,6 +140,13 @@ typedef enum {
 } background_spritesheet_idx_t;
 
 typedef enum {
+              SPRITE_ASTEROID_SMALL,      // 0
+              SPRITE_ASTEROID_NORMAL,     // 1
+              SPRITE_ASTEROID_BIG,         // 2
+              SPRITE_ASTEROID_TOTAL
+} asteroid_spritesheet_idx_t;
+
+typedef enum {
               ASTEROID_SIZE_SMALL,        // 0
               ASTEROID_SIZE_NORMAL,       // 1
               ASTEROID_SIZE_BIG,          // 2
@@ -219,7 +226,6 @@ void init_sprites(void);
 
 void init_asteroids(int n);
 void asteroid_logic();
-void draw_asteroids();
 void spawn_asteroids(float x, float y, asteroid_size_t size, int n);
 void break_asteroid(asteroid_t *asteroid, int idx);
 
@@ -228,6 +234,9 @@ void player_logic();
 
 void draw_player_sprite(void);
 void draw_player_nosprite(void);
+
+void draw_asteroids_sprite(void);
+void draw_asteroids_nosprite(void);
 
 void shoot_bullet(void);
 void bullet_logic(void);
@@ -239,7 +248,7 @@ int process_input(u32 keys_down, u32 keys_held);
 void reset_game(void);
 void draw_score(void);
 
-/* Function pointers */
-void (*draw_player)(void) = draw_player_sprite;
-
+/* Function pointers. */
+void (*draw_player)(void)    = draw_player_sprite;
+void (*draw_asteroids)(void) = draw_asteroids_sprite;
 #endif

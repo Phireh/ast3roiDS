@@ -1,0 +1,4 @@
+--atlas -f rgba8888 -z auto
+asteroid_small.png
+asteroid_normal.png
+asteroid_big.png

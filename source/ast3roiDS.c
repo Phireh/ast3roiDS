@@ -21,11 +21,15 @@ float             yinput;
 float             xinput_sensitivity = 2.0f;
 float             yinput_sensitivity = 0.01f;
 int               game_state = NORMAL_GAMESTATE;
+
 C2D_SpriteSheet   player_spritesheet;
 C2D_SpriteSheet   bullet_spritesheet;
 C2D_SpriteSheet   background_spritesheet;
+C2D_SpriteSheet   asteroid_spritesheet;
+
 C2D_Sprite        bullet_normal_sprite;
 C2D_Sprite        background_static_sprite;
+C2D_Sprite        asteroid_sprites[SPRITE_ASTEROID_TOTAL];
 
 u32               bulletmask; // NOTE: this has to have MAX_BULLETS bits
 bullet_t          bullets[MAX_BULLETS];
@@ -140,11 +144,23 @@ void init_sprites()
   if (!background_spritesheet)
     PRINTDINIT("Could not load background spritesheet\n");
 
+  asteroid_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/asteroid_sprites.t3x");
+  if (!asteroid_spritesheet)
+    PRINTDINIT("Could not load asteroid spritesheet\n");
+
+  
+
   C2D_SpriteFromSheet(&bullet_normal_sprite, bullet_spritesheet, SPRITE_BULLET_NORMAL);
   C2D_SpriteSetCenter(&bullet_normal_sprite, 0.5f, 0.5f);
 
   C2D_SpriteFromSheet(&background_static_sprite, background_spritesheet, SPRITE_BACKGROUND_STATIC);
   C2D_SpriteSetCenter(&background_static_sprite, 0.5f, 0.5f);
+
+  for (int i = 0; i < SPRITE_ASTEROID_TOTAL; i++) {
+      C2D_SpriteFromSheet(&asteroid_sprites[i], asteroid_spritesheet, i);
+      C2D_SpriteSetCenter(&asteroid_sprites[i], 0.5f, 0.5f);
+  }
+    
 
 }
 
@@ -209,9 +225,31 @@ void init_asteroids(int n)
   
     asteroid->xspeed = xs - ASTEROID_MAXSPEED;
     asteroid->yspeed = ys - ASTEROID_MAXSPEED;
-    float rad = RANDF(20.0f);
-    asteroid->radius = rad + (MAX_ASTEROID_SIZE/2);
+    
+    /* float rad = RANDF(20.0f); */
+    /* asteroid->radius = rad + (MAX_ASTEROID_SIZE/2); */
+
+    /* Only create asteroids of acceptable, discrete sizes */
+    /* TODO(David): Figure if we can scale sprites to avoid using discrete sizes */
+    float rad = MAX_ASTEROID_SIZE;
+    int ast_size = rand() % ASTEROID_SIZE_TOTAL;
+    switch (ast_size) {
+    case ASTEROID_SIZE_SMALL:
+      rad *= ASTEROID_SMALL_RATIO;
+      break;
+    case ASTEROID_SIZE_NORMAL:
+      rad *= ASTEROID_NORMAL_RATIO;
+      break;
+    case ASTEROID_SIZE_BIG:
+      rad *= ASTEROID_BIG_RATIO;
+      break;
+    default:
+      // NOTE(David): Possible error-log here
+      break;
+    }
+    asteroid->radius = rad;
     asteroid->color = WHITE;
+    
   }
   PRINTDINIT("Initial AST mask %#lx\n", asteroidmask);
 }
@@ -268,7 +306,7 @@ void asteroid_logic(void)
 
 
 /* Draw asteroids on screen */
-void draw_asteroids(void)
+void draw_asteroids_nosprite(void)
 {
   u32 clr;
   float depth = 0.9f;
@@ -285,6 +323,22 @@ void draw_asteroids(void)
                      clr,
                      clr,
                      clr);
+      PRINTDRENDER("Draw asteroid X %3.2f Y %3.2f\n", asteroid->x, asteroid->y);
+    }
+  }
+}
+
+/* Draw asteroids as a sprite */
+void draw_asteroids_sprite(void)
+{
+  asteroid_t *asteroid;
+  for (int i = 0; i < MAX_ASTEROIDS; i++) {
+    if (asteroidmask >> i & 1) {
+      asteroid = &asteroids[i];
+      int size = asteroid_size(asteroid->radius);
+      C2D_SpriteSetPos(&asteroid_sprites[size], asteroid->x, asteroid->y);
+      /* TODO(David): Add rotation velocity to asteroid sprites */
+      C2D_DrawSprite(&asteroid_sprites[size]);
       PRINTDRENDER("Draw asteroid X %3.2f Y %3.2f\n", asteroid->x, asteroid->y);
     }
   }
@@ -616,6 +670,9 @@ void reset_game(void)
   last_hit_frame = 0;
   score = 0;
 
+  /* NOTE(David): at the moment init_sprites() should not be called here.
+     This may change at some point if we free graphics memory in-between levels */
+  
   init_player();
   init_asteroids(ASTEROID_NUMBER);
 }
