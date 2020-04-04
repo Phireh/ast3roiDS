@@ -28,9 +28,10 @@
 
 
 // Utility macros
-#define RANDF(a)            (float)rand()/(float)(RAND_MAX/(a));
+#define RANDF(a)            (float)rand()/(float)(RAND_MAX/(a))
+#define RANDF2(a,b)         (float)(((ABS(b)) - RANDF((ABS(b-a)))))
 #define ABS(a)              (((a)<0)?(-(a)):(a))
-#define NORM(a,b)       ((a)/(b))
+#define NORM(a,b)           ((a)/(b))
 
 // Gameplay config macros
 #define PLAYER_SAFE_ZONE_RADIUS 60.0f
@@ -253,7 +254,9 @@ typedef struct asteroid_t {
     vec2f speed;
     float s[1];
   };
-
+  
+  float angle;
+  float rotspeed;
   float radius;
   u32 color;
 } asteroid_t;
@@ -298,10 +301,16 @@ inline void normalize_2f(vec2f *v)
   v->y /= norm;
 }
 
-// Takes an angle in degrees and computes the radian equivalent in place
+// Takes an angle in degrees and computes the radian equivalent
 inline float deg_to_rad(float degrees)
 {
   return (degrees * M_PI) / 180.0f;
+}
+
+/* Special clamp to keep degrees between [0,360] but wrapping the values around */
+inline float clamp_deg(float angle)
+{
+  return angle > 360.0f ? angle - 360.0f : angle < 0.0f ? angle + 360.0f : angle;
 }
 
 // Rotate a vector by angle in rads in place
@@ -315,7 +324,7 @@ inline void rotate_2f_rad(vec2f *v, float angle_in_rads)
   v->y = (rot_sin * x) + (rot_cos * y);
 }
 
-// Rotate vector by angle in degrees
+// Rotate vector by angle in degrees in place
 inline void rotate_2f_deg(vec2f *v, float angle_in_degs)
 {
   float angle_in_rads = deg_to_rad(angle_in_degs);

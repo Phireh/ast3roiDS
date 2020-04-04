@@ -241,9 +241,6 @@ void init_asteroids(int n)
   
     asteroid->xspeed = xs - ASTEROID_MAXSPEED;
     asteroid->yspeed = ys - ASTEROID_MAXSPEED;
-    
-    /* float rad = RANDF(20.0f); */
-    /* asteroid->radius = rad + (MAX_ASTEROID_SIZE/2); */
 
     /* Only create asteroids of acceptable, discrete sizes */
     /* TODO(David): Figure if we can scale sprites to avoid using discrete sizes */
@@ -263,8 +260,10 @@ void init_asteroids(int n)
       // NOTE(David): Possible error-log here
       break;
     }
-    asteroid->radius = rad;
-    asteroid->color = WHITE;
+    asteroid->radius   = rad;
+    asteroid->rotspeed = RANDF2(-1.0f, 1.0f);
+    asteroid->angle    = 0.0f;
+    asteroid->color    = WHITE;
     
   }
   PRINTDINIT("Initial AST mask %#lx\n", asteroidmask);
@@ -314,8 +313,9 @@ void asteroid_logic(void)
         PRINTDLOGIC("Asteroid went out of bounds leftwards\n");
       }
 
-      asteroid->x = new_x;
-      asteroid->y = new_y;
+      asteroid->x     = new_x;
+      asteroid->y     = new_y;
+      asteroid->angle += asteroid->rotspeed;
     }
   }
 }
@@ -353,7 +353,7 @@ void draw_asteroids_sprite(void)
       asteroid = &asteroids[i];
       int size = asteroid_size(asteroid->radius);
       C2D_SpriteSetPos(&asteroid_sprites[size], asteroid->x, asteroid->y);
-      /* TODO(David): Add rotation velocity to asteroid sprites */
+      C2D_SpriteSetRotation(&asteroid_sprites[size], deg_to_rad(-asteroid->angle+90.0f));
       C2D_DrawSprite(&asteroid_sprites[size]);
       PRINTDRENDER("Draw asteroid X %3.2f Y %3.2f\n", asteroid->x, asteroid->y);
     }
@@ -450,18 +450,8 @@ void player_logic()
   yinput = yinput * yinput_sensitivity;
   
   /* Update angle based on player input */
-  float old_angle = player_ship.angle;
-  float new_angle = old_angle - xinput;
-  
-  // Keep angles in [0,360] rangep
-  if (new_angle > 360.0f)
-    new_angle -= 360.0f;
-  if (new_angle < 0.0f)
-    new_angle += 360.0f;
-
-  player_ship.angle = new_angle;
-
-  PRINTDLOGIC("PLAYER ANGLE %3.2f", player_ship.angle);
+  float new_angle = player_ship.angle - xinput;
+  player_ship.angle = clamp_deg(new_angle);
 
   /* Cache cos and sin for the duration of the frame */
   float fsin = sin(deg_to_rad(new_angle));
@@ -704,11 +694,7 @@ void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
     asteroid->y = y;
     
     /* Make speed in range (-maxs,+maxs) */
-    float xs = RANDF(ASTEROID_MAXSPEED * 2);
-    float ys = RANDF(ASTEROID_MAXSPEED * 2);
-
-    asteroid->xspeed = xs - ASTEROID_MAXSPEED;
-    asteroid->yspeed = ys - ASTEROID_MAXSPEED;
+    asteroid->xspeed = RANDF2(-ASTEROID_MAXSPEED, ASTEROID_MAXSPEED);
     
     float rad = 0.0f;
     if (size == ASTEROID_SIZE_BIG) {
@@ -718,8 +704,9 @@ void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
     } else if (size == ASTEROID_SIZE_SMALL) {
       rad = MAX_ASTEROID_SIZE*ASTEROID_SMALL_RATIO;
     }
-    asteroid->radius = rad;
-    asteroid->color = WHITE;
+    asteroid->radius   = rad;
+    asteroid->rotspeed = RANDF(1.0f);
+    asteroid->color    = WHITE;
   }
 }
 
