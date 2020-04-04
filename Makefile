@@ -190,9 +190,9 @@ clean:
 $(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	%.t3s
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
-	# NOTE: this is a quick patch to make sure that romfs/gfx
-	# is always created after make clean. For some reason the stock
-	# Makefile doesn't create the folder on time
+#       NOTE: this is a quick patch to make sure that romfs/gfx
+#       is always created after make clean. For some reason the stock
+#       Makefile doesn't create the folder on time
 	@mkdir -p $(GFXBUILD) 
 	@tex3ds -i $< -H $(BUILD)/$*.h -d $(DEPSDIR)/$*.d -o $(GFXBUILD)/$*.t3x
 
