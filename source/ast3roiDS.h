@@ -233,7 +233,14 @@ typedef struct enemy_ship_t {
   int health;
   enemy_state_t state;
   u32 color;
-  float vertices[XY_TOTAL]; // relative to local coordinates
+  union {
+    struct {
+      vec2f v1;
+      vec2f v2;
+      vec2f v3;
+    };
+    float vertices[XY_TOTAL]; // relative to local coordinates
+  };
 } enemy_ship_t;
 
 typedef struct asteroid_t {

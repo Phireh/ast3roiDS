@@ -501,6 +501,7 @@ void enemy_ship_logic(enemy_ship_t *enemy)
   float old_y = enemy->y;
   float new_x = old_x + enemy->xspeed;
   float new_y = old_y + enemy->yspeed;
+  float angle = enemy->angle;
   
   if (new_y > TOP_SCREEN_HEIGHT) {
     new_y = 0.0f;
@@ -518,16 +519,41 @@ void enemy_ship_logic(enemy_ship_t *enemy)
   enemy->y = new_y;
 
   /* Try to look at player */
-  /* TODO: Complete this so that the enemy ship turns left or right to look
-     at the player ship */
+  /* We calculate the direction towards the player ship. Then we calculate if we would
+   * approximate that vector by going to the right or left using the scalar product */
+  
+  /* NOTE(David): Is this really the most efficient way to track the player ? */
   vec2f look_at_player_v;
   look_at_player_v.x = player_ship.x - enemy->x;
   look_at_player_v.y = player_ship.y - enemy->y;
-  //normalize_2f(&look_at_player_v);
-
-  vec2f turn_left_v;
-  float turn_left_angle;
   
+  vec2f curr_direction_v;
+  curr_direction_v.x = cos(deg_to_rad(angle));
+  curr_direction_v.y = sin(deg_to_rad(angle));
+  float direction_proj = scalar_prod_2f(look_at_player_v, curr_direction_v);
+
+  vec2f turn_left_v = curr_direction_v;
+  rotate_2f_deg(&turn_left_v, enemy->turnrate);
+  float turn_left_proj = scalar_prod_2f(look_at_player_v, turn_left_v);
+
+  vec2f turn_right_v = curr_direction_v;
+  rotate_2f_deg(&turn_right_v, -enemy->turnrate);
+  float turn_right_proj = scalar_prod_2f(look_at_player_v, turn_right_v);
+  int direction = 0;
+  
+  if      (turn_left_proj > direction_proj)  direction = -1; // left 
+  else if (turn_right_proj > direction_proj) direction =  1; // right
+
+  float angle_delta = enemy->turnrate * direction;
+  
+  enemy->angle += angle_delta;
+  
+  if (direction) {
+    /* Update vertex positions for figure */
+    rotate_2f_deg(&enemy->v1, angle_delta);
+    rotate_2f_deg(&enemy->v2, angle_delta);
+    rotate_2f_deg(&enemy->v3, angle_delta);
+  }
 }
 
 void shoot_bullet(void)
@@ -568,6 +594,7 @@ enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32
   new_enemy.color  = color;
   new_enemy.angle  = 90.0f;
   new_enemy.health = TODO_CHANGEME;
+  new_enemy.turnrate = 5.0f;
 
   new_enemy.vertices[X0] = -r;
   new_enemy.vertices[Y0] =  r;
