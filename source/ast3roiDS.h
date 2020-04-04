@@ -100,6 +100,11 @@
 
 /* Types */
 
+typedef struct {
+  float x;
+  float y;
+} vec2f;
+
 typedef enum {
               X0,        // 0
               Y0,        // 1
@@ -154,10 +159,24 @@ typedef enum {
 } asteroid_size_t;
 
 typedef struct player_ship_t {
-  float x;
-  float y;
-  float xspeed;
-  float yspeed;
+  union {
+    struct {
+      float x;
+      float y;
+    };
+    vec2f pos;
+    float p[1];
+  };
+  
+  union {
+    struct {
+      float xspeed;
+      float yspeed;
+    };
+    vec2f speed;
+    float s[1];
+  };
+  
   float angle;
   float radius;
   int health;
@@ -167,26 +186,94 @@ typedef struct player_ship_t {
   unsigned int curr_sprite;
 } player_ship_t;
 
+typedef struct enemy_ship_t {
+    union {
+    struct {
+      float x;
+      float y;
+    };
+    vec2f pos;
+    float p[1];
+  };
+  
+  union {
+    struct {
+      float xspeed;
+      float yspeed;
+    };
+    vec2f speed;
+    float s[1];
+  };
+  
+  float angle;
+  float radius;
+  int health;
+  u32 color;
+  float vertices[XY_TOTAL]; // relative to local coordinates
+} enemy_ship_t;
+
 typedef struct asteroid_t {
-  float x;
-  float y;
-  float xspeed;
-  float yspeed;
+    union {
+    struct {
+      float x;
+      float y;
+    };
+    vec2f pos;
+    float p[1];
+  };
+  
+  union {
+    struct {
+      float xspeed;
+      float yspeed;
+    };
+    vec2f speed;
+    float s[1];
+  };
+
   float radius;
   u32 color;
 } asteroid_t;
 
 typedef struct bullet_t {
-  float x;
-  float y;
-  float xspeed;
-  float yspeed;
+    union {
+    struct {
+      float x;
+      float y;
+    };
+    vec2f pos;
+    float p[1];
+  };
+
+    union {
+    struct {
+      float xspeed;
+      float yspeed;
+    };
+    vec2f speed;
+    float s[1];
+  };
+  
   float angle;
   C2D_Sprite *sprite;
 } bullet_t;
 
 
 /* Inline functions */
+
+// Calculate the normal of 2D vector
+inline float norm_2f(vec2f v)
+{
+  return sqrt((v.x*v.x) + (v.y*v.y));
+}
+
+// Normalize vector 2D in place
+inline void normalize_2f(vec2f *v)
+{
+  float norm = norm_2f(*v);
+  v->x /= norm;
+  v->y /= norm;
+}
 
 // Check if point is inside rectangle
 inline int inside_rect(float x, float y, float leftx, float rightx, float downy, float upy)
