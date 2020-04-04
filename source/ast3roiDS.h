@@ -23,6 +23,7 @@
 #define GREEN               C2D_Color32(0x00, 0xFF, 0x00, 0xFF)
 #define BLACK               C2D_Color32(0x00, 0x00, 0x00, 0xFF)
 #define DPAD                (KEY_CPAD_RIGHT | KEY_CPAD_LEFT | KEY_CPAD_UP | KEY_CPAD_DOWN)
+#define TODO_CHANGEME       0
 
 
 
@@ -50,7 +51,8 @@
 // Debug macros
 // TODO: make TODO macros print to submenu
 #if defined(DEBUG_RENDER) || defined(DEBUG_INPUT) || defined(DEBUG_LOGIC) || defined(DEBUG_INIT) || defined(DEBUG_COLLISION) || defined(DEBUG_BULLETS)
-#define CHECKDEBUGMODE      
+#define CHECKDEBUGMODE
+#define DEBUG_MODE 1
 #else
 #define CHECKDEBUGMODE
 #endif
@@ -116,10 +118,16 @@ typedef enum {
 } vert_idx_t;
 
 typedef enum {
-              NORMAL_INPUT,     // 0
-              PAUSE_GAME_INPUT, // 1
-              EXIT_GAME_INPUT,  // 2
-              TOTAL_INPUT       // 3
+              NORMAL_INPUT,        // 0
+              PAUSE_GAME_INPUT,    // 1
+              EXIT_GAME_INPUT,     // 2
+#ifndef DEBUG_MODE
+              TOTAL_INPUT,         // 3
+
+#else
+              DEBUG_ENEMIES_INPUT, // 3
+              TOTAL_INPUT,         // 4
+#endif
 } input_return_t;
 
 typedef enum {
@@ -147,7 +155,7 @@ typedef enum {
 typedef enum {
               SPRITE_ASTEROID_SMALL,      // 0
               SPRITE_ASTEROID_NORMAL,     // 1
-              SPRITE_ASTEROID_BIG,         // 2
+              SPRITE_ASTEROID_BIG,        // 2
               SPRITE_ASTEROID_TOTAL
 } asteroid_spritesheet_idx_t;
 
@@ -157,6 +165,12 @@ typedef enum {
               ASTEROID_SIZE_BIG,          // 2
               ASTEROID_SIZE_TOTAL         // 3
 } asteroid_size_t;
+
+typedef enum {
+              ENEMY_STATE_INACTIVE,       // 0 
+              ENEMY_STATE_ACTIVE,         // 1
+              ENEMY_STATE_TOTAL           // 2
+} enemy_state_t;
 
 typedef struct player_ship_t {
   union {
@@ -181,7 +195,14 @@ typedef struct player_ship_t {
   float radius;
   int health;
   u32 color;
-  float vertices[XY_TOTAL]; // relative to local coordinates
+  union {
+    struct {
+      vec2f v1;
+      vec2f v2;
+      vec2f v3;
+    };
+    float vertices[XY_TOTAL]; // relative to local coordinates
+  };
   C2D_Sprite sprites[SPRITE_PLAYER_TOTAL];
   unsigned int curr_sprite;
 } player_ship_t;
@@ -207,7 +228,9 @@ typedef struct enemy_ship_t {
   
   float angle;
   float radius;
+  float turnrate;
   int health;
+  enemy_state_t state;
   u32 color;
   float vertices[XY_TOTAL]; // relative to local coordinates
 } enemy_ship_t;
@@ -275,6 +298,37 @@ inline void normalize_2f(vec2f *v)
   v->y /= norm;
 }
 
+// Takes an angle in degrees and computes the radian equivalent in place
+inline float deg_to_rad(float degrees)
+{
+  return (degrees * M_PI) / 180.0f;
+}
+
+// Rotate a vector by angle in rads in place
+inline void rotate_2f_rad(vec2f *v, float angle_in_rads)
+{
+  float x = v->x;
+  float y = v->y;
+  float rot_cos = cos(angle_in_rads);
+  float rot_sin = sin(angle_in_rads);
+  v->x = (rot_cos * x) - (rot_sin * y);
+  v->y = (rot_sin * x) + (rot_cos * y);
+}
+
+// Rotate vector by angle in degrees
+inline void rotate_2f_deg(vec2f *v, float angle_in_degs)
+{
+  float angle_in_rads = deg_to_rad(angle_in_degs);
+  rotate_2f_rad(v, angle_in_rads);
+}
+
+// Scalar product of two 2D angles
+inline float scalar_prod_2f(vec2f v1, vec2f v2)
+{
+  return (v1.x*v2.x) + (v1.y*v2.y);
+}
+
+
 // Check if point is inside rectangle
 inline int inside_rect(float x, float y, float leftx, float rightx, float downy, float upy)
 {
@@ -318,6 +372,10 @@ void break_asteroid(asteroid_t *asteroid, int idx);
 
 void init_player();
 void player_logic();
+
+enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32 color);
+void draw_enemy_ship(enemy_ship_t *enemy_ship);
+void enemy_ship_logic(enemy_ship_t *enemy_ship);
 
 void draw_player_sprite(void);
 void draw_player_nosprite(void);

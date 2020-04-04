@@ -34,6 +34,9 @@ C2D_Sprite        asteroid_sprites[SPRITE_ASTEROID_TOTAL];
 u32               bulletmask; // NOTE: this has to have MAX_BULLETS bits
 bullet_t          bullets[MAX_BULLETS];
 
+/* Testing, temporal structures */
+enemy_ship_t      enemy_testing_ship;
+
 /* Main program */
 int main(int argc, char *argv[])
 {
@@ -87,6 +90,11 @@ int main(int argc, char *argv[])
       case EXIT_GAME_INPUT:
         goto exit_main_loop;
         break;
+#ifdef DEBUG_MODE
+      case DEBUG_ENEMIES_INPUT:
+        enemy_testing_ship = spawn_enemy_ship(200.0f, 120.0f, 1.0f, 1.0f, 10.0f, RED);
+        break;
+#endif
       default:
         PRINTDINPUT("Error on input function\n");
         break;
@@ -97,6 +105,10 @@ int main(int argc, char *argv[])
         player_logic();
         bullet_logic();
         asteroid_logic();
+#ifdef DEBUG_MODE
+      if (enemy_testing_ship.state == ENEMY_STATE_ACTIVE)
+        enemy_ship_logic(&enemy_testing_ship);
+#endif
         ++framecount;
       } else {
         PRINTDLOGIC("Game is paused\n");
@@ -112,6 +124,10 @@ int main(int argc, char *argv[])
       draw_player();
       draw_bullets();
       draw_asteroids();
+#ifdef DEBUG_MODE
+      if (enemy_testing_ship.state == ENEMY_STATE_ACTIVE)
+        draw_enemy_ship(&enemy_testing_ship);
+#endif
       C2D_Flush();
 
       /* Draw to bottom screen */
@@ -412,6 +428,11 @@ int process_input(u32 keys_down, u32 keys_held)
     PRINTDINPUT("Pressed KEY_START\n");
     return PAUSE_GAME_INPUT;
   }
+
+#ifdef DEBUG_MODE
+  if (input_keys & KEY_B)
+    return DEBUG_ENEMIES_INPUT;
+#endif
   return NORMAL_INPUT;
 }
 
@@ -432,7 +453,7 @@ void player_logic()
   float old_angle = player_ship.angle;
   float new_angle = old_angle - xinput;
   
-  // Keep angles in [0,360] range
+  // Keep angles in [0,360] rangep
   if (new_angle > 360.0f)
     new_angle -= 360.0f;
   if (new_angle < 0.0f)
@@ -443,12 +464,8 @@ void player_logic()
   PRINTDLOGIC("PLAYER ANGLE %3.2f", player_ship.angle);
 
   /* Cache cos and sin for the duration of the frame */
-  float fsin = sin( ((new_angle)*M_PI) / 180.0f );
-  float fcos = cos( ((new_angle)*M_PI) / 180.0f );
-
-  /* Save angle difference for doing rotations */
-  float dfsin = sin( ((old_angle - new_angle)*M_PI) / 180.0f );
-  float dfcos = cos( ((old_angle - new_angle)*M_PI) / 180.0f );
+  float fsin = sin(deg_to_rad(new_angle));
+  float fcos = cos(deg_to_rad(new_angle));
 
   /* Update speed vector */
   player_ship.yspeed = player_ship.yspeed + yinput * -fsin;
@@ -483,24 +500,43 @@ void player_logic()
   player_ship.x = new_x;
 
   /* Update vertex positions for figure */
-  // NOTE: Perhaps this is a good argument for switching to C++
-  float x0 = player_ship.vertices[X0] * dfcos - player_ship.vertices[Y0] * dfsin; // vertex 0
-  float y0 = player_ship.vertices[Y0] * dfcos + player_ship.vertices[X0] * dfsin;  
-  float x1 = player_ship.vertices[X1] * dfcos - player_ship.vertices[Y1] * dfsin; // vertex 1
-  float y1 = player_ship.vertices[Y1] * dfcos + player_ship.vertices[X1] * dfsin;  
-  float x2 = player_ship.vertices[X2] * dfcos - player_ship.vertices[Y2] * dfsin; // vertex 2
-  float y2 = player_ship.vertices[Y2] * dfcos + player_ship.vertices[X2] * dfsin;  
+  rotate_2f_deg(&player_ship.v1, xinput);
+  rotate_2f_deg(&player_ship.v2, xinput);
+  rotate_2f_deg(&player_ship.v3, xinput);  
+}
 
+void enemy_ship_logic(enemy_ship_t *enemy)
+{
+  float old_x = enemy->x;
+  float old_y = enemy->y;
+  float new_x = old_x + enemy->xspeed;
+  float new_y = old_y + enemy->yspeed;
+  
+  if (new_y > TOP_SCREEN_HEIGHT) {
+    new_y = 0.0f;
+  } else if (new_y < 0) {
+    new_y = (float) TOP_SCREEN_HEIGHT;
+  }
+  
+  if (new_x > TOP_SCREEN_WIDTH) {
+    new_x = 0;
+  } else if (new_x < 0) {
+    new_x = (float) TOP_SCREEN_WIDTH;
+  }
 
+  enemy->x = new_x;
+  enemy->y = new_y;
 
+  /* Try to look at player */
+  /* TODO: Complete this so that the enemy ship turns left or right to look
+     at the player ship */
+  vec2f look_at_player_v;
+  look_at_player_v.x = player_ship.x - enemy->x;
+  look_at_player_v.y = player_ship.y - enemy->y;
+  //normalize_2f(&look_at_player_v);
 
-
-  player_ship.vertices[X0] = x0; // vertex 0
-  player_ship.vertices[Y0] = y0; 
-  player_ship.vertices[X1] = x1; // vertex 1
-  player_ship.vertices[Y1] = y1;  
-  player_ship.vertices[X2] = x2; // vertex 2
-  player_ship.vertices[Y2] = y2;
+  vec2f turn_left_v;
+  float turn_left_angle;
   
 }
 
@@ -522,13 +558,55 @@ void shoot_bullet(void)
   float angle = player_ship.angle;
   bullets[i].angle = angle;
   /* Check sin and cos this frame */
-  float fsin = sin( ((angle)*M_PI) / 180.0f );
-  float fcos = cos( ((angle)*M_PI) / 180.0f );
+  float fsin = sin(deg_to_rad(angle));
+  float fcos = cos(deg_to_rad(angle));
 
 
   bullets[i].xspeed = BULLET_INITIAL_SPEED * fcos;
   bullets[i].yspeed = BULLET_INITIAL_SPEED * -fsin;
   bullets[i].sprite = &bullet_normal_sprite;
+}
+
+enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32 color)
+{
+  enemy_ship_t new_enemy;
+  new_enemy.x      = x;
+  new_enemy.y      = y;
+  new_enemy.xspeed = xs;
+  new_enemy.yspeed = ys;
+  new_enemy.radius = r;
+  new_enemy.color  = color;
+  new_enemy.angle  = 90.0f;
+  new_enemy.health = TODO_CHANGEME;
+
+  new_enemy.vertices[X0] = -r;
+  new_enemy.vertices[Y0] =  r;
+  new_enemy.vertices[X1] =  0.0f;
+  new_enemy.vertices[Y1] =  -r*2.0f;
+  new_enemy.vertices[X2] =  r;
+  new_enemy.vertices[Y2] =  r;
+
+  new_enemy.state = ENEMY_STATE_ACTIVE;
+  return new_enemy;
+}
+
+void draw_enemy_ship(enemy_ship_t *enemy_ship)
+{
+  u32   clr   = enemy_ship->color;
+  float depth = 1.0f;
+
+  
+  C2D_DrawTriangle(enemy_ship->x + enemy_ship->vertices[X0], // vertex 0
+                   enemy_ship->y + enemy_ship->vertices[Y0],
+                   clr,
+                   enemy_ship->x + enemy_ship->vertices[X1], // vertex 1
+                   enemy_ship->y + enemy_ship->vertices[Y1],
+                   clr,
+                   enemy_ship->x + enemy_ship->vertices[X2], // vertex 2
+                   enemy_ship->y + enemy_ship->vertices[Y2],
+                   clr,
+                   depth);
+
 }
 
 void bullet_logic(void)
@@ -574,7 +652,7 @@ void draw_bullets(void)
   for (; i < MAX_BULLETS; i++) {
     if (bulletmask >> i & 1) {
       C2D_SpriteSetPos(bullets[i].sprite, bullets[i].x, bullets[i].y);
-      C2D_SpriteSetRotation(bullets[i].sprite, C3D_AngleFromDegrees(-bullets[i].angle+90.0f));
+      C2D_SpriteSetRotation(bullets[i].sprite, deg_to_rad(-bullets[i].angle+90.0f));
       C2D_DrawSprite(bullets[i].sprite);
     }
   }
