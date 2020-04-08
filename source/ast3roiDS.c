@@ -585,25 +585,24 @@ void shoot_bullet(void)
 
 enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32 color)
 {
-  enemy_ship_t new_enemy;
-  new_enemy.x      = x;
-  new_enemy.y      = y;
-  new_enemy.xspeed = xs;
-  new_enemy.yspeed = ys;
-  new_enemy.radius = r;
-  new_enemy.color  = color;
-  new_enemy.angle  = 90.0f;
-  new_enemy.health = TODO_CHANGEME;
-  new_enemy.turnrate = 5.0f;
-
-  new_enemy.vertices[X0] = -r;
-  new_enemy.vertices[Y0] =  r;
-  new_enemy.vertices[X1] =  0.0f;
-  new_enemy.vertices[Y1] =  -r*2.0f;
-  new_enemy.vertices[X2] =  r;
-  new_enemy.vertices[Y2] =  r;
-
-  new_enemy.state = ENEMY_STATE_ACTIVE;
+  enemy_ship_t new_enemy = {
+  .x            = x,
+  .y            = y,
+  .xspeed       = xs,
+  .yspeed       = ys,
+  .radius       = r,
+  .color        = color,
+  .angle        = 90.0f,
+  .health       = TODO_CHANGEME,
+  .turnrate     = 5.0f,
+  .state        = ENEMY_STATE_ACTIVE,  
+  .vertices[X0] = -r,
+  .vertices[Y0] =  r,
+  .vertices[X1] =  0.0f,
+  .vertices[Y1] =  -r*2.0f,
+  .vertices[X2] =  r,
+  .vertices[Y2] =  r,
+  };
   return new_enemy;
 }
 
