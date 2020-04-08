@@ -25,13 +25,10 @@
 #define DPAD                (KEY_CPAD_RIGHT | KEY_CPAD_LEFT | KEY_CPAD_UP | KEY_CPAD_DOWN)
 #define TODO_CHANGEME       0
 
-
-
-// Utility macros
-#define RANDF(a)            (float)rand()/(float)(RAND_MAX/(a))
-#define RANDF2(a,b)         (float)(((ABS(b)) - RANDF((ABS(b-a)))))
-#define ABS(a)              (((a)<0)?(-(a)):(a))
-#define NORM(a,b)           ((a)/(b))
+// Generic functions
+#define abs(a) _Generic((a), \
+    int:   abs(a),  \
+    float: absf(a))
 
 // Gameplay config macros
 #define PLAYER_SAFE_ZONE_RADIUS 60.0f
@@ -294,6 +291,24 @@ typedef struct bullet_t {
 
 /* Inline functions */
 
+// Return the absolute value of a
+float absf(float a)
+{
+  return a < 0 ? -a : a;
+}
+
+// Obtain random number up to a
+float randf(float a)
+{
+  return (float)rand()/(float)(RAND_MAX/(a));
+}
+
+// Obtain random number in range [a,b]
+float randf2(float a, float b)
+{
+  return abs(b) - randf(abs(b-a));
+}
+
 // Calculate the normal of 2D vector
 inline float norm_2f(vec2f v)
 {
@@ -371,7 +386,7 @@ inline int inside_top_screen(float x, float y)
 
 inline int asteroid_size(float radius)
 {
-  float relative_size = NORM(radius, MAX_ASTEROID_SIZE);
+  float relative_size = radius/MAX_ASTEROID_SIZE;
   if      (relative_size >= ASTEROID_BIG_RATIO)    return ASTEROID_SIZE_BIG;
   else if (relative_size >= ASTEROID_NORMAL_RATIO) return ASTEROID_SIZE_NORMAL;
   else                                             return ASTEROID_SIZE_SMALL;

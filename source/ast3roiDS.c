@@ -229,15 +229,15 @@ void init_asteroids(int n)
     float initial_y;
   /* Find starting position at least X px away from player in both directions */
     do {
-      initial_x = RANDF(400);
-      initial_y = RANDF(240);
+      initial_x = randf(400);
+      initial_y = randf(240);
     } while (inside_circle(initial_x, initial_y, player_ship.x, player_ship.y, PLAYER_SAFE_ZONE_RADIUS));
     asteroid->x = initial_x;
     asteroid->y = initial_y;
     
     /* Make speed in range (-maxs,+maxs) */
-    float xs = RANDF(ASTEROID_MAXSPEED * 2);
-    float ys = RANDF(ASTEROID_MAXSPEED * 2);
+    float xs = randf(ASTEROID_MAXSPEED * 2.0f);
+    float ys = randf(ASTEROID_MAXSPEED * 2.0f);
   
     asteroid->xspeed = xs - ASTEROID_MAXSPEED;
     asteroid->yspeed = ys - ASTEROID_MAXSPEED;
@@ -261,7 +261,7 @@ void init_asteroids(int n)
       break;
     }
     asteroid->radius   = rad;
-    asteroid->rotspeed = RANDF2(-1.0f, 1.0f);
+    asteroid->rotspeed = randf2(-1.0f, 1.0f);
     asteroid->angle    = 0.0f;
     asteroid->color    = WHITE;
     
@@ -720,7 +720,7 @@ void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
     asteroid->y = y;
     
     /* Make speed in range (-maxs,+maxs) */
-    asteroid->xspeed = RANDF2(-ASTEROID_MAXSPEED, ASTEROID_MAXSPEED);
+    asteroid->xspeed = randf2(-ASTEROID_MAXSPEED, ASTEROID_MAXSPEED);
     
     float rad = 0.0f;
     if (size == ASTEROID_SIZE_BIG) {
@@ -731,7 +731,7 @@ void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
       rad = MAX_ASTEROID_SIZE*ASTEROID_SMALL_RATIO;
     }
     asteroid->radius   = rad;
-    asteroid->rotspeed = RANDF(1.0f);
+    asteroid->rotspeed = randf(1.0f);
     asteroid->color    = WHITE;
   }
 }
