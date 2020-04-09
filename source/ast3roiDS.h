@@ -165,6 +165,12 @@ typedef enum {
 } asteroid_size_t;
 
 typedef enum {
+              SPRITE_ENEMY_NORMAL,        // 0
+              SPRITE_ENEMY_BOOSTING,      // 1
+              SPRITE_ENEMY_TOTAL          // 2
+} enemy_spritesheet_idx_t;
+
+typedef enum {
               ENEMY_STATE_INACTIVE,       // 0 
               ENEMY_STATE_ACTIVE,         // 1
               ENEMY_STATE_TOTAL           // 2
@@ -238,6 +244,8 @@ typedef struct enemy_ship_t {
     };
     float vertices[XY_TOTAL]; // relative to local coordinates
   };
+  C2D_Sprite sprites[SPRITE_ENEMY_TOTAL];
+  unsigned int curr_sprite;
 } enemy_ship_t;
 
 typedef struct asteroid_t {
@@ -407,6 +415,7 @@ void player_logic();
 enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32 color);
 void draw_enemy_ship(enemy_ship_t *enemy_ship);
 void enemy_ship_logic(enemy_ship_t *enemy_ship);
+void draw_enemy_sprite(void);
 
 void draw_player_sprite(void);
 void draw_player_nosprite(void);

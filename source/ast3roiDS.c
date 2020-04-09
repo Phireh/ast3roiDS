@@ -26,6 +26,7 @@ C2D_SpriteSheet   player_spritesheet;
 C2D_SpriteSheet   bullet_spritesheet;
 C2D_SpriteSheet   background_spritesheet;
 C2D_SpriteSheet   asteroid_spritesheet;
+C2D_SpriteSheet   enemy_spritesheet;
 
 C2D_Sprite        bullet_normal_sprite;
 C2D_Sprite        background_static_sprite;
@@ -126,7 +127,8 @@ int main(int argc, char *argv[])
       draw_asteroids();
 #ifdef DEBUG_MODE
       if (enemy_testing_ship.state == ENEMY_STATE_ACTIVE)
-        draw_enemy_ship(&enemy_testing_ship);
+          //draw_enemy_ship(&enemy_testing_ship);
+          draw_enemy_sprite();
 #endif
       C2D_Flush();
 
@@ -163,8 +165,12 @@ void init_sprites()
   asteroid_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/asteroid_sprites.t3x");
   if (!asteroid_spritesheet)
     PRINTDINIT("Could not load asteroid spritesheet\n");
-
   
+  enemy_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/enemy_sprites.t3x");
+  if (!enemy_spritesheet)
+    exit(1);
+
+
 
   C2D_SpriteFromSheet(&bullet_normal_sprite, bullet_spritesheet, SPRITE_BULLET_NORMAL);
   C2D_SpriteSetCenter(&bullet_normal_sprite, 0.5f, 0.5f);
@@ -176,7 +182,9 @@ void init_sprites()
       C2D_SpriteFromSheet(&asteroid_sprites[i], asteroid_spritesheet, i);
       C2D_SpriteSetCenter(&asteroid_sprites[i], 0.5f, 0.5f);
   }
-    
+  
+  C2D_SpriteFromSheet(&enemy_testing_ship.sprites[SPRITE_ENEMY_NORMAL], enemy_spritesheet, SPRITE_ENEMY_NORMAL);
+  C2D_SpriteSetCenter(&enemy_testing_ship.sprites[SPRITE_ENEMY_NORMAL], 0.5f, 0.5f);
 
 }
 
@@ -604,6 +612,16 @@ enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32
   .vertices[Y2] =  r,
   };
   return new_enemy;
+}
+
+
+/* Draws the enemy ship as a sprite*/
+
+void draw_enemy_sprite(void)
+{
+  C2D_SpriteSetPos(&enemy_testing_ship.sprites[enemy_testing_ship.curr_sprite], enemy_testing_ship.x, enemy_testing_ship.y);
+  C2D_SpriteSetRotation(&enemy_testing_ship.sprites[enemy_testing_ship.curr_sprite], C3D_AngleFromDegrees(-enemy_testing_ship.angle+90.0f));
+  C2D_DrawSprite(&enemy_testing_ship.sprites[enemy_testing_ship.curr_sprite]);
 }
 
 void draw_enemy_ship(enemy_ship_t *enemy_ship)
