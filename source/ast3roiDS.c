@@ -31,6 +31,8 @@ C2D_SpriteSheet   enemy_spritesheet;
 C2D_Sprite        bullet_normal_sprite;
 C2D_Sprite        background_static_sprite;
 C2D_Sprite        asteroid_sprites[SPRITE_ASTEROID_TOTAL];
+C2D_Sprite        enemy_sprites[SPRITE_ENEMY_TOTAL];
+
 
 u32               bulletmask; // NOTE: this has to have MAX_BULLETS bits
 bullet_t          bullets[MAX_BULLETS];
@@ -168,8 +170,7 @@ void init_sprites()
   
   enemy_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/enemy_sprites.t3x");
   if (!enemy_spritesheet)
-    exit(1);
-
+    PRINTDINIT("Could not load asteroid spritesheet\n");
 
 
   C2D_SpriteFromSheet(&bullet_normal_sprite, bullet_spritesheet, SPRITE_BULLET_NORMAL);
@@ -183,8 +184,8 @@ void init_sprites()
       C2D_SpriteSetCenter(&asteroid_sprites[i], 0.5f, 0.5f);
   }
   
-  C2D_SpriteFromSheet(&enemy_testing_ship.sprites[SPRITE_ENEMY_NORMAL], enemy_spritesheet, SPRITE_ENEMY_NORMAL);
-  C2D_SpriteSetCenter(&enemy_testing_ship.sprites[SPRITE_ENEMY_NORMAL], 0.5f, 0.5f);
+  C2D_SpriteFromSheet(&enemy_sprites[SPRITE_ENEMY_NORMAL], enemy_spritesheet, SPRITE_ENEMY_NORMAL);
+  C2D_SpriteSetCenter(&enemy_sprites[SPRITE_ENEMY_NORMAL], 0.5f, 0.5f);
 
 }
 
@@ -610,6 +611,8 @@ enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32
   .vertices[Y1] =  -r*2.0f,
   .vertices[X2] =  r,
   .vertices[Y2] =  r,
+  .sprites[0]     =  enemy_sprites[0],
+  .curr_sprite  =  SPRITE_ENEMY_NORMAL
   };
   return new_enemy;
 }
@@ -620,7 +623,7 @@ enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32
 void draw_enemy_sprite(void)
 {
   C2D_SpriteSetPos(&enemy_testing_ship.sprites[enemy_testing_ship.curr_sprite], enemy_testing_ship.x, enemy_testing_ship.y);
-  C2D_SpriteSetRotation(&enemy_testing_ship.sprites[enemy_testing_ship.curr_sprite], C3D_AngleFromDegrees(-enemy_testing_ship.angle+90.0f));
+  C2D_SpriteSetRotation(&enemy_testing_ship.sprites[enemy_testing_ship.curr_sprite], C3D_AngleFromDegrees(enemy_testing_ship.angle-90.0f));
   C2D_DrawSprite(&enemy_testing_ship.sprites[enemy_testing_ship.curr_sprite]);
 }
 
