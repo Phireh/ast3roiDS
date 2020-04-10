@@ -765,8 +765,8 @@ void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
 void draw_score(void)
 {
   char buf[SCORE_TEXT_LENGTH];
-  sprintf(buf, "Score: %d", score);
-  
+  stbsp_sprintf(buf, "Score: %d", score);
+ 
   score_text_buffer = C2D_TextBufNew(SCORE_TEXT_LENGTH);
   C2D_TextParse(&score_text, score_text_buffer, buf);
   C2D_DrawText(&score_text, C2D_WithColor, 5.0f, 5.0f, 0.0f, 1.0f, 1.0f, WHITE);

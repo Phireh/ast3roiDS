@@ -11,6 +11,11 @@
 #include <stdlib.h>
 #include <time.h>
 
+
+/* STB library initialization */
+#define STB_SPRINTF_IMPLEMENTATION
+#include "stb/stb_sprintf.h"
+
 /* Defines */
 
 #define TOP_SCREEN_WIDTH    400
