@@ -28,7 +28,8 @@
 // Generic functions
 #define abs(a) _Generic((a), \
     int:   abs(a),  \
-    float: absf(a))
+    float: absf(a), \
+    double: absd(a))
 
 // Gameplay config macros
 #define PLAYER_SAFE_ZONE_RADIUS 60.0f
@@ -305,6 +306,12 @@ float absf(float a)
   return a < 0 ? -a : a;
 }
 
+// Return the absolute value of a
+double absd(double a)
+{
+  return a < 0 ? -a : a;
+}
+
 // Obtain random number up to a
 float randf(float a)
 {
@@ -337,6 +344,12 @@ inline float deg_to_rad(float degrees)
   return (degrees * M_PI) / 180.0f;
 }
 
+// Takes angle in rads and computes degree equivalent
+inline float rad_to_deg(float rads)
+{
+  return (rads * 180.0f) / M_PI;
+}
+
 /* Special clamp to keep degrees between [0,360] but wrapping the values around */
 inline float clamp_deg(float angle)
 {
@@ -365,6 +378,14 @@ inline void rotate_2f_deg(vec2f *v, float angle_in_degs)
 inline float scalar_prod_2f(vec2f v1, vec2f v2)
 {
   return (v1.x*v2.x) + (v1.y*v2.y);
+}
+
+// Get angle of 2D vector in respect to (1,0)
+inline float vec_to_angle(vec2f v)
+{
+  normalize_2f(&v);
+  float rads = atan2f(v.y, v.x);
+  return rad_to_deg(rads);
 }
 
 
@@ -400,6 +421,41 @@ inline int asteroid_size(float radius)
   else                                             return ASTEROID_SIZE_SMALL;
 }
 
+// Returns ' ' or '-' based on sign. Useful for visualization
+inline char check_sign(int sign)
+{
+  return sign >= 0 ? ' ' : '-';
+}
+
+/* Truncates float value into integral and fractional parts as integers.
+   x : the float number
+   i : destination of integral part
+   f : destination of fractional part
+   p : number of digits in fractional part
+   return : -1 or +1 depending on the sign of x. */
+inline int ftoi(float x, int *i, int *f, int p)
+{
+  float integral, fractional;
+  fractional = modff(x, &integral);
+  *i = (int) integral;
+  *f = (int) abs((fractional * pow(10.0f,p)));
+  return x >= 0.0f ? 1 : -1;
+}
+
+extern inline void print_in_rect(char *s, size_t n, float x, float y, float scale)
+{
+  char buf[n];
+  sprintf(buf, "%s", s);
+  C2D_TextBuf text_buf = C2D_TextBufNew(n);
+  C2D_Text text;
+  C2D_TextParse(&text, text_buf, buf);
+  float w, h;
+  C2D_TextGetDimensions(&text, scale, scale, &w, &h);
+  C2D_DrawRectSolid(x-1.0f, y-1.0f, 0.9f, w+2.0f, h+2.0f, WHITE);
+  C2D_DrawRectSolid(x, y, 0.9f, w, h, BLACK);
+  C2D_DrawText(&text, C2D_WithColor, x, y, 1.0f, scale, scale, WHITE);
+}
+
 /* Functions */
 
 void init_sprites(void);
@@ -413,9 +469,9 @@ void init_player();
 void player_logic();
 
 enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32 color);
-void draw_enemy_ship(enemy_ship_t *enemy_ship);
-void enemy_ship_logic(enemy_ship_t *enemy_ship);
-void draw_enemy_sprite(void);
+void draw_enemy_ship_sprite(enemy_ship_t *enemy);
+void draw_enemy_ship_nosprite(enemy_ship_t *enemy);
+void enemy_ship_logic(enemy_ship_t *enemy);
 
 void draw_player_sprite(void);
 void draw_player_nosprite(void);
@@ -434,6 +490,7 @@ void reset_game(void);
 void draw_score(void);
 
 /* Function pointers. */
-void (*draw_player)(void)    = draw_player_sprite;
-void (*draw_asteroids)(void) = draw_asteroids_sprite;
+void (*draw_player)    (void)                = draw_player_sprite;
+void (*draw_asteroids) (void)                = draw_asteroids_sprite;
+void (*draw_enemy_ship)(enemy_ship_t *enemy) = draw_enemy_ship_sprite;
 #endif

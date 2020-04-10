@@ -40,6 +40,7 @@ bullet_t          bullets[MAX_BULLETS];
 /* Testing, temporal structures */
 enemy_ship_t      enemy_testing_ship;
 
+
 /* Main program */
 int main(int argc, char *argv[])
 {
@@ -128,9 +129,9 @@ int main(int argc, char *argv[])
       draw_bullets();
       draw_asteroids();
 #ifdef DEBUG_MODE
-      if (enemy_testing_ship.state == ENEMY_STATE_ACTIVE)
-          //draw_enemy_ship(&enemy_testing_ship);
-          draw_enemy_sprite();
+      if (enemy_testing_ship.state == ENEMY_STATE_ACTIVE) {
+          draw_enemy_ship(&enemy_testing_ship);
+      }
 #endif
       C2D_Flush();
 
@@ -139,7 +140,6 @@ int main(int argc, char *argv[])
       C2D_SceneBegin(bottom);
       draw_score();
       C3D_FrameEnd(0);
-      
     }
 
  exit_main_loop:
@@ -501,7 +501,8 @@ void player_logic()
   /* Update vertex positions for figure */
   rotate_2f_deg(&player_ship.v1, xinput);
   rotate_2f_deg(&player_ship.v2, xinput);
-  rotate_2f_deg(&player_ship.v3, xinput);  
+  rotate_2f_deg(&player_ship.v3, xinput);
+
 }
 
 void enemy_ship_logic(enemy_ship_t *enemy)
@@ -533,36 +534,40 @@ void enemy_ship_logic(enemy_ship_t *enemy)
   
   /* NOTE(David): Is this really the most efficient way to track the player ? */
   vec2f look_at_player_v;
-  look_at_player_v.x = player_ship.x - enemy->x;
-  look_at_player_v.y = player_ship.y - enemy->y;
+  look_at_player_v.x = player_ship.x - new_x;
+  look_at_player_v.y = player_ship.y - new_y;
+  normalize_2f(&look_at_player_v);
   
   vec2f curr_direction_v;
   curr_direction_v.x = cos(deg_to_rad(angle));
-  curr_direction_v.y = sin(deg_to_rad(angle));
-  float direction_proj = scalar_prod_2f(look_at_player_v, curr_direction_v);
+  curr_direction_v.y = -sin(deg_to_rad(angle));
+  float curr_direction_proj = scalar_prod_2f(look_at_player_v, curr_direction_v);
 
   vec2f turn_left_v = curr_direction_v;
-  rotate_2f_deg(&turn_left_v, enemy->turnrate);
+  rotate_2f_deg(&turn_left_v, -enemy->turnrate);
   float turn_left_proj = scalar_prod_2f(look_at_player_v, turn_left_v);
 
   vec2f turn_right_v = curr_direction_v;
-  rotate_2f_deg(&turn_right_v, -enemy->turnrate);
+  rotate_2f_deg(&turn_right_v, +enemy->turnrate);
   float turn_right_proj = scalar_prod_2f(look_at_player_v, turn_right_v);
-  int direction = 0;
-  
-  if      (turn_left_proj > direction_proj)  direction = -1; // left 
-  else if (turn_right_proj > direction_proj) direction =  1; // right
-
-  float angle_delta = enemy->turnrate * direction;
-  
-  enemy->angle += angle_delta;
-  
-  if (direction) {
-    /* Update vertex positions for figure */
-    rotate_2f_deg(&enemy->v1, angle_delta);
-    rotate_2f_deg(&enemy->v2, angle_delta);
-    rotate_2f_deg(&enemy->v3, angle_delta);
+  float angle_delta;
+  angle_delta = 0.0f;
+  if (turn_left_proj > curr_direction_proj) {         // turn left
+    angle_delta = +enemy->turnrate;
+    enemy->angle = clamp_deg(angle + angle_delta);
+  } else if (turn_right_proj > curr_direction_proj) { // turn right
+    angle_delta = -enemy->turnrate;
+    enemy->angle = clamp_deg(angle + angle_delta);
+  } else {                                       // lock to target
+    //enemy->angle = clamp_deg(vec_to_angle(look_at_player_v));
+    //angle_delta = enemy->angle - angle;
   }
+
+  /* Update vertex positions for figure */
+  rotate_2f_deg(&enemy->v1, -angle_delta);
+  rotate_2f_deg(&enemy->v2, -angle_delta);
+  rotate_2f_deg(&enemy->v3, -angle_delta);
+
 }
 
 void shoot_bullet(void)
@@ -603,7 +608,7 @@ enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32
   .color        = color,
   .angle        = 90.0f,
   .health       = TODO_CHANGEME,
-  .turnrate     = 5.0f,
+  .turnrate     = 5.5f,
   .state        = ENEMY_STATE_ACTIVE,  
   .vertices[X0] = -r,
   .vertices[Y0] =  r,
@@ -620,14 +625,14 @@ enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32
 
 /* Draws the enemy ship as a sprite*/
 
-void draw_enemy_sprite(void)
+void draw_enemy_ship_sprite(enemy_ship_t *enemy)
 {
-  C2D_SpriteSetPos(&enemy_testing_ship.sprites[enemy_testing_ship.curr_sprite], enemy_testing_ship.x, enemy_testing_ship.y);
-  C2D_SpriteSetRotation(&enemy_testing_ship.sprites[enemy_testing_ship.curr_sprite], C3D_AngleFromDegrees(enemy_testing_ship.angle-90.0f));
-  C2D_DrawSprite(&enemy_testing_ship.sprites[enemy_testing_ship.curr_sprite]);
+  C2D_SpriteSetPos(&enemy->sprites[enemy->curr_sprite], enemy->x, enemy->y);
+  C2D_SpriteSetRotation(&enemy->sprites[enemy->curr_sprite], C3D_AngleFromDegrees(-enemy->angle+90.0f));
+  C2D_DrawSprite(&enemy->sprites[enemy->curr_sprite]);
 }
 
-void draw_enemy_ship(enemy_ship_t *enemy_ship)
+void draw_enemy_ship_nosprite(enemy_ship_t *enemy_ship)
 {
   u32   clr   = enemy_ship->color;
   float depth = 1.0f;
