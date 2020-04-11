@@ -27,16 +27,19 @@ C2D_SpriteSheet   bullet_spritesheet;
 C2D_SpriteSheet   background_spritesheet;
 C2D_SpriteSheet   asteroid_spritesheet;
 C2D_SpriteSheet   enemy_spritesheet;
+C2D_SpriteSheet   pickup_hp_spritesheet;
 
 C2D_Sprite        bullet_normal_sprite;
 C2D_Sprite        background_static_sprite;
 C2D_Sprite        asteroid_sprites[SPRITE_ASTEROID_TOTAL];
 C2D_Sprite        enemy_sprites[SPRITE_ENEMY_TOTAL];
+C2D_Sprite        pickup_hp_sprites[SPRITE_PICKUP_HP_TOTAL];
 
 
 u32               bulletmask; // NOTE: this has to have MAX_BULLETS bits
 bullet_t          bullets[MAX_BULLETS];
 enemy_ship_t      enemy_ships[MAX_ENEMY_SHIPS];
+pickup_t          pickups[MAX_PICKUPS];
 
 
 /* Main program */
@@ -118,6 +121,10 @@ int main(int argc, char *argv[])
           if (enemy_ships[i].state) // not inactive
             enemy_ship_logic(&enemy_ships[i]);
 #endif
+
+        for (int i = 0; i < MAX_PICKUPS; ++i)
+          if (pickups[i].state) // not inactive
+            pickup_logic(&pickups[i]);
         ++framecount;
       } else {
         PRINTDLOGIC("Game is paused\n");
@@ -133,6 +140,11 @@ int main(int argc, char *argv[])
       draw_player();
       draw_bullets();
       draw_asteroids();
+      for (int i = 0; i < MAX_PICKUPS; ++i) {
+        if (pickups[i].state) { // not inactive 
+          draw_pickup(&pickups[i]);
+        }
+      }
 #ifdef DEBUG_MODE
       for (int i = 0; i < MAX_ENEMY_SHIPS; ++i)
         if (enemy_ships[i].state) // not inactive
@@ -177,6 +189,14 @@ void init_sprites()
   if (!enemy_spritesheet)
     PRINTDINIT("Could not load asteroid spritesheet\n");
 
+  pickup_hp_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/hp_pickup_sprites.t3x");
+  if (!pickup_hp_spritesheet) exit(1);
+
+  for (int i = 0; i < SPRITE_PICKUP_HP_TOTAL; ++i) {
+    C2D_SpriteFromSheet(&pickup_hp_sprites[i], pickup_hp_spritesheet, i);
+    C2D_SpriteSetCenter(&pickup_hp_sprites[i], 0.5f, 0.5f);
+  }
+
 
   C2D_SpriteFromSheet(&bullet_normal_sprite, bullet_spritesheet, SPRITE_BULLET_NORMAL);
   C2D_SpriteSetCenter(&bullet_normal_sprite, 0.5f, 0.5f);
@@ -185,8 +205,8 @@ void init_sprites()
   C2D_SpriteSetCenter(&background_static_sprite, 0.5f, 0.5f);
 
   for (int i = 0; i < SPRITE_ASTEROID_TOTAL; i++) {
-      C2D_SpriteFromSheet(&asteroid_sprites[i], asteroid_spritesheet, i);
-      C2D_SpriteSetCenter(&asteroid_sprites[i], 0.5f, 0.5f);
+    C2D_SpriteFromSheet(&asteroid_sprites[i], asteroid_spritesheet, i);
+    C2D_SpriteSetCenter(&asteroid_sprites[i], 0.5f, 0.5f);
   }
   
   C2D_SpriteFromSheet(&enemy_sprites[SPRITE_ENEMY_NORMAL], enemy_spritesheet, SPRITE_ENEMY_NORMAL);
@@ -280,8 +300,8 @@ void init_asteroids(int n)
     asteroid->color    = WHITE;
     
     loot_table_t new_loot_table = {
-                            .probabilities = {0.5f, 1.0f},
-                            .items = {NOTHING, EXTRA_SCORE},
+                                   .probabilities = {0.5f, 0.7f, 1.0f},
+                                   .items = {NOTHING, EXTRA_SCORE, PICKUP_HP},
     };
     asteroid->loot_table = new_loot_table;
     
@@ -716,9 +736,15 @@ void break_asteroid(asteroid_t *asteroid, int idx)
   /* Check for loot */
   int loot = dispatch_loot_table(asteroid->loot_table);
   switch (loot) {
-  case BOMB:
+  case PICKUP_BOMB:
     break;
-  case HP:
+  case PICKUP_HP:
+    for (int i = 0; i < MAX_PICKUPS; ++i) {
+      if (!pickups[i].state) { // inactive
+        pickups[i] = spawn_pickup(PICKUP_HP, asteroid->x, asteroid->y, 0.0f, 0.0f, 10.0f, WHITE);
+        break;
+      }
+    }
     break;
   case EXTRA_SCORE:
     score += 10000000; // TODO(David): change this nonsense. This is for testing purposes
@@ -783,6 +809,84 @@ void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
     asteroid->rotspeed = randf(1.0f);
     asteroid->color    = WHITE;
   }
+}
+
+pickup_t spawn_pickup(int type, float x, float y, float xs, float ys, float r, u32 color)
+{
+  pickup_t new_pickup = {
+                         .x           = x,
+                         .y           = y,
+                         .xspeed      = xs,
+                         .yspeed      = ys,
+                         .type        = type,
+                         .radius      = r,
+                         .curr_sprite = 0,
+                         .color       = color,
+                         .state       = PICKUP_STATE_ACTIVE,
+  };
+  switch (type) {
+  case PICKUP_HP:
+    new_pickup.sprites      = pickup_hp_sprites;
+    new_pickup.nsprites     = PICKUP_HP_NSPRITES;
+    new_pickup.anim_speed   = PICKUP_HP_ANIM_SPEED;
+    break;
+  default: // TODO(David): insert some kind of WIP or debug sprite to see the error
+    break;
+  }
+
+  return new_pickup;
+}
+
+void pickup_logic(pickup_t *pickup)
+{
+  /* Movement */
+  float new_x = pickup->x + pickup->xspeed;
+  float new_y = pickup->y + pickup->yspeed;
+  float radius = pickup->radius;
+  
+  if (new_y > TOP_SCREEN_HEIGHT + radius) {
+    new_y = - radius;
+  } else if (new_y < 0 - radius) {
+    new_y = (float) TOP_SCREEN_HEIGHT + radius;
+  }
+
+  if (new_x > TOP_SCREEN_WIDTH + radius) {
+    new_x = - radius;
+  } else if (new_x < 0 - radius) {
+    new_x = (float) TOP_SCREEN_WIDTH + radius;
+  }
+
+  pickup->x = new_x;
+  pickup->y = new_y;
+
+  /* Collision detection with player */
+  if (inside_circle(player_ship.x, player_ship.y, new_x, new_y, radius)) {
+    ++player_ship.health;
+    pickup->state = PICKUP_STATE_INACTIVE;
+  }
+}
+
+void draw_pickup(pickup_t *pickup)
+{
+  /* Get and update current state of animation */
+  C2D_Sprite *the_sprite;
+  int nsprites = pickup->nsprites;
+  int curr_sprite = pickup->curr_sprite;
+  int anim_speed = pickup->anim_speed;
+  
+  if (anim_speed) {
+    if (!(framecount % anim_speed)) ++curr_sprite;
+    curr_sprite = curr_sprite >= nsprites ? 0 : curr_sprite;
+    the_sprite = &pickup->sprites[curr_sprite];
+    pickup->curr_sprite = curr_sprite;
+  } else {
+    the_sprite = &pickup->sprites[0]; // no animation
+  }
+
+  /* Draw animation */
+  C2D_SpriteSetPos(the_sprite, pickup->x, pickup->y);
+  C2D_DrawSprite(the_sprite);
+
 }
 
 void draw_score(void)

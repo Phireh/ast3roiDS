@@ -31,6 +31,7 @@
 #define MAX_BULLETS              32
 #define MAX_ASTEROIDS            32
 #define MAX_ENEMY_SHIPS          32
+#define MAX_PICKUPS              32
 #define SCORE_TEXT_LENGTH        64
 #define ASTEROID_LOOT_TABLE_SIZE 8
 #define WHITE                    C2D_Color32(0xFF, 0xFF, 0xFF, 0xFF)
@@ -54,6 +55,10 @@
 #define ASTEROID_SMALL_SCORE    50
 #define ASTEROID_NORMAL_SCORE   100
 #define ASTEROID_BIG_SCORE      200
+
+// Animation config macros
+#define PICKUP_HP_NSPRITES      6
+#define PICKUP_HP_ANIM_SPEED    10
 
 
 typedef enum {
@@ -112,10 +117,26 @@ typedef enum {
 } enemy_spritesheet_idx_t;
 
 typedef enum {
+              SPRITE_PICKUP_HP_F0,        // 0: frame 0 of animation
+              SPRITE_PICKUP_HP_F1,        // 1: frame 1 of animation
+              SPRITE_PICKUP_HP_F2,        // 2: frame 2 of animation
+              SPRITE_PICKUP_HP_F3,        // 3: frame 3 of animation
+              SPRITE_PICKUP_HP_F4,        // 4: frame 4 of animation
+              SPRITE_PICKUP_HP_F5,        // 5: frame 5 of animation
+              SPRITE_PICKUP_HP_TOTAL,     // 6
+} pickup_hp_spritesheet_idx_t;
+
+typedef enum {
               ENEMY_STATE_INACTIVE,       // 0 
               ENEMY_STATE_ACTIVE,         // 1
               ENEMY_STATE_TOTAL           // 2
 } enemy_state_t;
+
+typedef enum {
+              PICKUP_STATE_INACTIVE,       // 0 
+              PICKUP_STATE_ACTIVE,         // 1
+              PICKUP_STATE_TOTAL           // 2
+} pickup_state_t;
 
 typedef enum {
               LOOT_TABLE_IDX_NOTHING,     // 0: Get nothing
@@ -132,8 +153,8 @@ typedef enum {
 
 typedef enum { // Possible values for the result of a loot table dispatch
               NOTHING,      // 0
-              BOMB,         // 1
-              HP,           // 2
+              PICKUP_BOMB,  // 1
+              PICKUP_HP,    // 2
               EXTRA_SCORE,  // 3
 } loot_table_item_t;
 
@@ -151,6 +172,35 @@ typedef struct loot_table_t
   float probabilities[LOOT_TABLE_IDX_TOTAL]; // holds probability of item n in range [0,1]
   int items[LOOT_TABLE_IDX_TOTAL];           // holds identifier of item n
 } loot_table_t;
+
+typedef struct pickup_t
+{
+  union {
+    struct {
+      float x;
+      float y;
+    };
+    vec2f pos;
+    float p[1];
+  };
+  union {
+    struct {
+      float xspeed;
+      float yspeed;
+    };
+    vec2f speed;
+    float s[1];
+  };
+  float radius;
+  u32 color;
+  int type;
+  int state;
+  
+  int anim_speed;
+  int nsprites;
+  int curr_sprite;
+  C2D_Sprite *sprites;
+} pickup_t;
 
 typedef struct player_ship_t {
   union {
@@ -346,6 +396,10 @@ void draw_asteroids_nosprite(void);
 void shoot_bullet(void);
 void bullet_logic(void);
 void draw_bullets(void);
+
+pickup_t spawn_pickup(int type, float x, float y, float xs, float ys, float r, u32 color);
+void pickup_logic(pickup_t *pickup);
+void draw_pickup(pickup_t *pickup);
 
 void draw_background_static(C2D_Sprite *background);
 
