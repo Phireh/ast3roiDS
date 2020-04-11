@@ -37,6 +37,7 @@ C2D_Sprite        enemy_sprites[SPRITE_ENEMY_TOTAL];
 u32               bulletmask; // NOTE: this has to have MAX_BULLETS bits
 bullet_t          bullets[MAX_BULLETS];
 
+
 /* Testing, temporal structures */
 enemy_ship_t      enemy_testing_ship;
 

@@ -15,11 +15,16 @@
 /* STB library initialization */
 #define STB_SPRINTF_IMPLEMENTATION
 #include "stb/stb_sprintf.h"
+// NOTE(David): Commented until we use this to clean unused var warnings
+// #include "stb/stretchy_buffer.h"
 
 /* Defines */
 
-#define TOP_SCREEN_WIDTH    400
-#define TOP_SCREEN_HEIGHT   240
+#define TOP_SCREEN_WIDTH       400
+#define TOP_SCREEN_HEIGHT      240
+#define BOTTOM_SCREEN_WIDTH    320
+#define BOTTOM_SCREEN_HEIGHT   240
+
 #define MAX_BULLETS         32
 #define MAX_ASTEROIDS       32
 #define SCORE_TEXT_LENGTH   64
@@ -110,6 +115,13 @@ typedef struct {
   float x;
   float y;
 } vec2f;
+
+typedef struct {
+  float x;
+  float y;
+  float w;
+  float h;
+} rect;
 
 typedef enum {
               X0,        // 0
@@ -459,6 +471,13 @@ extern inline void print_in_rect(char *s, size_t n, float x, float y, float scal
   C2D_DrawRectSolid(x-1.0f, y-1.0f, 0.9f, w+2.0f, h+2.0f, WHITE);
   C2D_DrawRectSolid(x, y, 0.9f, w, h, BLACK);
   C2D_DrawText(&text, C2D_WithColor, x, y, 1.0f, scale, scale, WHITE);
+}
+
+// Print a rectangle of color c1, with border of size b and color c2 at profundity p
+extern inline void print_rect_border(rect r, float b, float p, u32 c1, u32 c2)
+{
+  C2D_DrawRectSolid(r.x - b, r.y - b, p, r.w + b*2, r.h + b*2, c2);
+  C2D_DrawRectSolid(r.x , r.y, p, r.w, r.h, c1);
 }
 
 /* Functions */
