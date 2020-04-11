@@ -43,6 +43,7 @@ bullet_t          bullets[MAX_BULLETS];
 enemy_ship_t      enemy_ships[MAX_ENEMY_SHIPS];
 pickup_t          pickups[MAX_PICKUPS];
 health_t          health;
+uint              asteroid_spawn_freq = 120;
 
 
 /* Main program */
@@ -129,6 +130,18 @@ int main(int argc, char *argv[])
           if (pickups[i].state) // not inactive
             pickup_logic(&pickups[i]);
         ++framecount;
+
+        if (!(framecount % asteroid_spawn_freq)) { // spawn new asteroids naturally
+          int side = rand() % 3;
+          int n = rand() % 3;
+
+          // case 1: spawn in left side
+          if (side == 1) spawn_asteroids(-MAX_ASTEROID_SIZE, randf(240.0f), ASTEROID_SIZE_BIG, n);
+          // case 2: spawn in top side
+          if (side == 2) spawn_asteroids(randf(400.0f), -MAX_ASTEROID_SIZE, ASTEROID_SIZE_BIG, n);
+          // case 3: spawn in bottom side
+          if (side == 3) spawn_asteroids(240.0f, randf(240.0f)+MAX_ASTEROID_SIZE, ASTEROID_SIZE_BIG, n);
+        }
       } else {
         PRINTDLOGIC("Game is paused\n");
       }
@@ -819,6 +832,7 @@ void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
     
     /* Make speed in range (-maxs,+maxs) */
     asteroid->xspeed = randf2(-ASTEROID_MAXSPEED, ASTEROID_MAXSPEED);
+    asteroid->yspeed = randf2(-ASTEROID_MAXSPEED, ASTEROID_MAXSPEED);
     
     float rad = 0.0f;
     if (size == ASTEROID_SIZE_BIG) {
