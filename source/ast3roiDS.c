@@ -344,6 +344,7 @@ void asteroid_logic(void)
         /* Only hit player once per grace period */
         if (framecount - last_hit_frame > GRACE_PERIOD_AFTER_HIT) {
           player_ship.health--;
+          player_ship.effects |= PLAYER_EFFECT_BLINKING;
           asteroid->color = RED;
         }
         last_hit_frame = framecount;
@@ -422,6 +423,8 @@ void draw_player_sprite()
 {
   C2D_SpriteSetPos(&player_ship.sprites[player_ship.curr_sprite], player_ship.x, player_ship.y);
   C2D_SpriteSetRotation(&player_ship.sprites[player_ship.curr_sprite], C3D_AngleFromDegrees(-player_ship.angle+90.0f));
+  if (player_ship.effects & PLAYER_EFFECT_BLINKING && framecount % 4)
+    return;
   C2D_DrawSprite(&player_ship.sprites[player_ship.curr_sprite]);
 }
 
@@ -551,6 +554,9 @@ void player_logic()
   rotate_2f_deg(&player_ship.v2, xinput);
   rotate_2f_deg(&player_ship.v3, xinput);
 
+  /* Get rid of blinking effect if needed */
+  player_ship.effects &= framecount - last_hit_frame < GRACE_PERIOD_AFTER_HIT ?
+    (~0) : (~PLAYER_EFFECT_BLINKING);
 }
 
 void enemy_ship_logic(enemy_ship_t *enemy)

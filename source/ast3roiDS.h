@@ -60,6 +60,8 @@
 #define PICKUP_HP_NSPRITES      6
 #define PICKUP_HP_ANIM_SPEED    10
 
+// Masks for player effects
+#define PLAYER_EFFECT_BLINKING  (1 << 0)
 
 typedef enum {
               NORMAL_INPUT,        // 0
@@ -224,6 +226,7 @@ typedef struct player_ship_t {
   float angle;
   float radius;
   int health;
+  u32 effects;
   u32 color;
   union {
     struct {
