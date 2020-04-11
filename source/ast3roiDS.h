@@ -30,6 +30,7 @@
 
 #define MAX_BULLETS         32
 #define MAX_ASTEROIDS       32
+#define MAX_ENEMY_SHIPS     32
 #define SCORE_TEXT_LENGTH   64
 #define WHITE               C2D_Color32(0xFF, 0xFF, 0xFF, 0xFF)
 #define RED                 C2D_Color32(0xFF, 0x00, 0x00, 0xFF)

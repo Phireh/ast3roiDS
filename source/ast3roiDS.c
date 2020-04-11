@@ -36,10 +36,7 @@ C2D_Sprite        enemy_sprites[SPRITE_ENEMY_TOTAL];
 
 u32               bulletmask; // NOTE: this has to have MAX_BULLETS bits
 bullet_t          bullets[MAX_BULLETS];
-
-
-/* Testing, temporal structures */
-enemy_ship_t      enemy_testing_ship;
+enemy_ship_t      enemy_ships[MAX_ENEMY_SHIPS];
 
 
 /* Main program */
@@ -57,6 +54,7 @@ int main(int argc, char *argv[])
   C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
   C2D_Prepare();
 
+  /* TODO: This does not work anymore until we fix debug mode */
   // initializes console if necessary
   CHECKDEBUGMODE;
 
@@ -97,7 +95,12 @@ int main(int argc, char *argv[])
         break;
 #ifdef DEBUG_MODE
       case DEBUG_ENEMIES_INPUT:
-        enemy_testing_ship = spawn_enemy_ship(200.0f, 120.0f, 1.0f, 1.0f, 10.0f, RED);
+        for (int i = 0; i < MAX_ENEMY_SHIPS; ++i) {
+          if (!enemy_ships[i].state) {// inactive
+            enemy_ships[i] = spawn_enemy_ship(200.0f, 120.0f, 1.0f, 1.0f, 10.0f, RED);
+            break;
+          }
+        }
         break;
 #endif
       default:
@@ -111,8 +114,9 @@ int main(int argc, char *argv[])
         bullet_logic();
         asteroid_logic();
 #ifdef DEBUG_MODE
-      if (enemy_testing_ship.state == ENEMY_STATE_ACTIVE)
-        enemy_ship_logic(&enemy_testing_ship);
+        for (int i = 0; i < MAX_ENEMY_SHIPS; ++i)
+          if (enemy_ships[i].state) // not inactive
+            enemy_ship_logic(&enemy_ships[i]);
 #endif
         ++framecount;
       } else {
@@ -130,9 +134,9 @@ int main(int argc, char *argv[])
       draw_bullets();
       draw_asteroids();
 #ifdef DEBUG_MODE
-      if (enemy_testing_ship.state == ENEMY_STATE_ACTIVE) {
-          draw_enemy_ship(&enemy_testing_ship);
-      }
+      for (int i = 0; i < MAX_ENEMY_SHIPS; ++i)
+        if (enemy_ships[i].state) // not inactive
+          draw_enemy_ship(&enemy_ships[i]);
 #endif
       C2D_Flush();
 
@@ -440,7 +444,7 @@ int process_input(u32 keys_down, u32 keys_held)
   }
 
 #ifdef DEBUG_MODE
-  if (input_keys & KEY_B)
+  if (keys_down & KEY_B)
     return DEBUG_ENEMIES_INPUT;
 #endif
   return NORMAL_INPUT;
@@ -617,7 +621,7 @@ enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32
   .vertices[Y1] =  -r*2.0f,
   .vertices[X2] =  r,
   .vertices[Y2] =  r,
-  .sprites[0]     =  enemy_sprites[0],
+  .sprites[0]   =  enemy_sprites[0],
   .curr_sprite  =  SPRITE_ENEMY_NORMAL
   };
   return new_enemy;
