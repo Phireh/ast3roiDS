@@ -28,18 +28,21 @@ C2D_SpriteSheet   background_spritesheet;
 C2D_SpriteSheet   asteroid_spritesheet;
 C2D_SpriteSheet   enemy_spritesheet;
 C2D_SpriteSheet   pickup_hp_spritesheet;
+C2D_SpriteSheet   player_health_spritesheet;
 
 C2D_Sprite        bullet_normal_sprite;
 C2D_Sprite        background_static_sprite;
 C2D_Sprite        asteroid_sprites[SPRITE_ASTEROID_TOTAL];
 C2D_Sprite        enemy_sprites[SPRITE_ENEMY_TOTAL];
 C2D_Sprite        pickup_hp_sprites[SPRITE_PICKUP_HP_TOTAL];
+C2D_Sprite        player_health_sprite[PLAYER_STARTING_HP];
 
 
 u32               bulletmask; // NOTE: this has to have MAX_BULLETS bits
 bullet_t          bullets[MAX_BULLETS];
 enemy_ship_t      enemy_ships[MAX_ENEMY_SHIPS];
 pickup_t          pickups[MAX_PICKUPS];
+health_t          health;
 
 
 /* Main program */
@@ -69,7 +72,7 @@ int main(int argc, char *argv[])
   init_sprites();
   init_player();
   init_asteroids(ASTEROID_NUMBER);
-  
+
   /* Main loop */
   while (aptMainLoop())
     {
@@ -156,6 +159,7 @@ int main(int argc, char *argv[])
       C2D_TargetClear(bottom, BLACK);
       C2D_SceneBegin(bottom);
       draw_score();
+      draw_health();
       C3D_FrameEnd(0);
     }
 
@@ -192,6 +196,8 @@ void init_sprites()
   pickup_hp_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/hp_pickup_sprites.t3x");
   if (!pickup_hp_spritesheet) exit(1);
 
+  player_health_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/player_health_sprite.t3x");
+
   for (int i = 0; i < SPRITE_PICKUP_HP_TOTAL; ++i) {
     C2D_SpriteFromSheet(&pickup_hp_sprites[i], pickup_hp_spritesheet, i);
     C2D_SpriteSetCenter(&pickup_hp_sprites[i], 0.5f, 0.5f);
@@ -211,6 +217,12 @@ void init_sprites()
   
   C2D_SpriteFromSheet(&enemy_sprites[SPRITE_ENEMY_NORMAL], enemy_spritesheet, SPRITE_ENEMY_NORMAL);
   C2D_SpriteSetCenter(&enemy_sprites[SPRITE_ENEMY_NORMAL], 0.5f, 0.5f);
+
+  for (int i = 0; i < PLAYER_STARTING_HP; i++) {
+    C2D_SpriteFromSheet(&player_health_sprite[i], player_health_spritesheet, 0);
+    C2D_SpriteSetCenter(&player_health_sprite[i], 0.5f, 0.5f);
+  }
+  
 
 }
 
@@ -360,6 +372,11 @@ void asteroid_logic(void)
   }
 }
 
+void init_health(void)
+{
+  health.x = 20.0f;
+  health.y = 50.0f;
+}
 
 /* Draw asteroids on screen */
 void draw_asteroids_nosprite(void)
@@ -897,6 +914,17 @@ void draw_score(void)
   score_text_buffer = C2D_TextBufNew(SCORE_TEXT_LENGTH);
   C2D_TextParse(&score_text, score_text_buffer, buf);
   C2D_DrawText(&score_text, C2D_WithColor, 5.0f, 5.0f, 0.0f, 1.0f, 1.0f, WHITE);
+}
+
+void draw_health(void)
+{
+  init_health();
+
+  for (int i = 0; i < player_ship.health; ++i) {
+    C2D_SpriteSetPos(&player_health_sprite[i], health.x , health.y);
+    C2D_DrawSprite(&player_health_sprite[i]);
+    health.x += 30.0f;
+  }
 }
 
 /* Draw static background sprite, we assume that its center is at 0.5, 0.5 */

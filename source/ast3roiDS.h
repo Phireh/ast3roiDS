@@ -323,6 +323,11 @@ typedef struct bullet_t {
   C2D_Sprite *sprite;
 } bullet_t;
 
+typedef struct health_t {
+    float x;
+    float y;
+} health_t;
+
 
 inline int asteroid_size(float radius)
 {
@@ -382,6 +387,8 @@ void break_asteroid(asteroid_t *asteroid, int idx);
 void init_player();
 void player_logic();
 
+void init_health();
+
 enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32 color);
 void draw_enemy_ship_sprite(enemy_ship_t *enemy);
 void draw_enemy_ship_nosprite(enemy_ship_t *enemy);
@@ -406,6 +413,7 @@ void draw_background_static(C2D_Sprite *background);
 int process_input(u32 keys_down, u32 keys_held);
 void reset_game(void);
 void draw_score(void);
+void draw_health(void);
 
 /* Function pointers. */
 void (*draw_player)    (void)                = draw_player_sprite;
