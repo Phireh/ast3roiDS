@@ -28,16 +28,17 @@
 #define BOTTOM_SCREEN_WIDTH    320
 #define BOTTOM_SCREEN_HEIGHT   240
 
-#define MAX_BULLETS         32
-#define MAX_ASTEROIDS       32
-#define MAX_ENEMY_SHIPS     32
-#define SCORE_TEXT_LENGTH   64
-#define WHITE               C2D_Color32(0xFF, 0xFF, 0xFF, 0xFF)
-#define RED                 C2D_Color32(0xFF, 0x00, 0x00, 0xFF)
-#define GREEN               C2D_Color32(0x00, 0xFF, 0x00, 0xFF)
-#define BLACK               C2D_Color32(0x00, 0x00, 0x00, 0xFF)
-#define DPAD                (KEY_CPAD_RIGHT | KEY_CPAD_LEFT | KEY_CPAD_UP | KEY_CPAD_DOWN)
-#define TODO_CHANGEME       0
+#define MAX_BULLETS              32
+#define MAX_ASTEROIDS            32
+#define MAX_ENEMY_SHIPS          32
+#define SCORE_TEXT_LENGTH        64
+#define ASTEROID_LOOT_TABLE_SIZE 8
+#define WHITE                    C2D_Color32(0xFF, 0xFF, 0xFF, 0xFF)
+#define RED                      C2D_Color32(0xFF, 0x00, 0x00, 0xFF)
+#define GREEN                    C2D_Color32(0x00, 0xFF, 0x00, 0xFF)
+#define BLACK                    C2D_Color32(0x00, 0x00, 0x00, 0xFF)
+#define DPAD                     (KEY_CPAD_RIGHT | KEY_CPAD_LEFT | KEY_CPAD_UP | KEY_CPAD_DOWN)
+#define TODO_CHANGEME            0
 
 // Gameplay config macros
 #define PLAYER_SAFE_ZONE_RADIUS 60.0f
@@ -116,6 +117,41 @@ typedef enum {
               ENEMY_STATE_TOTAL           // 2
 } enemy_state_t;
 
+typedef enum {
+              LOOT_TABLE_IDX_NOTHING,     // 0: Get nothing
+              LOOT_TABLE_IDX_1,           // 1: First item
+              LOOT_TABLE_IDX_2,           // 2: Second item
+              LOOT_TABLE_IDX_3,           // 3: Third item
+              LOOT_TABLE_IDX_4,           // 4: Fourth item
+              LOOT_TABLE_IDX_5,           // 5: Fifth item
+              LOOT_TABLE_IDX_6,           // 6: Sixth item
+              LOOT_TABLE_IDX_7,           // 7: Seventh item
+              LOOT_TABLE_IDX_TOTAL        // 8
+              
+} loot_table_idx_t;
+
+typedef enum { // Possible values for the result of a loot table dispatch
+              NOTHING,      // 0
+              BOMB,         // 1
+              HP,           // 2
+              EXTRA_SCORE,  // 3
+} loot_table_item_t;
+
+/* Basic loot table.
+ * Usage: fill probabilities[] with growing values between 0.0f and 1.0f,
+ *        probabilities[0] represents the prob of nothing happening.
+ *        the probability of something else happening is prob[n] - prob[n-1].
+ *        This is meant to be used with dispatch_loot_table and a switch statement
+ *        to capture the output value.
+ * For example: prob[0] = 0.5f, prob[1] = 0.7f, prob[2] = 1.0f means:
+ *              50% of nothing, 20% of getting item 1, 30% of getting item 2
+ */
+typedef struct loot_table_t
+{
+  float probabilities[LOOT_TABLE_IDX_TOTAL]; // holds probability of item n in range [0,1]
+  int items[LOOT_TABLE_IDX_TOTAL];           // holds identifier of item n
+} loot_table_t;
+
 typedef struct player_ship_t {
   union {
     struct {
@@ -175,6 +211,7 @@ typedef struct enemy_ship_t {
   float turnrate;
   int health;
   enemy_state_t state;
+  loot_table_t loot_table;
   u32 color;
   union {
     struct {
@@ -206,10 +243,10 @@ typedef struct asteroid_t {
     vec2f speed;
     float s[1];
   };
-  
   float angle;
   float rotspeed;
   float radius;
+  loot_table_t loot_table;
   u32 color;
 } asteroid_t;
 
@@ -243,6 +280,16 @@ inline int asteroid_size(float radius)
   if      (relative_size >= ASTEROID_BIG_RATIO)    return ASTEROID_SIZE_BIG;
   else if (relative_size >= ASTEROID_NORMAL_RATIO) return ASTEROID_SIZE_NORMAL;
   else                                             return ASTEROID_SIZE_SMALL;
+}
+
+inline int dispatch_loot_table(loot_table_t table)
+{
+  float n = randf2(0.0f, 1.0f); // Get our probability between 0% and 100%
+  if (table.probabilities[LOOT_TABLE_IDX_NOTHING] > n) return NOTHING;
+  for (int i = LOOT_TABLE_IDX_1; i < LOOT_TABLE_IDX_TOTAL; ++i) {
+    if (table.probabilities[i] > n) return table.items[i];
+  }
+  return NOTHING; // if loot table isn't set correctly and we didn't find the item
 }
 
 

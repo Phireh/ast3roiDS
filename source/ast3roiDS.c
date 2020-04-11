@@ -279,6 +279,12 @@ void init_asteroids(int n)
     asteroid->angle    = 0.0f;
     asteroid->color    = WHITE;
     
+    loot_table_t new_loot_table = {
+                            .probabilities = {0.5f, 1.0f},
+                            .items = {NOTHING, EXTRA_SCORE},
+    };
+    asteroid->loot_table = new_loot_table;
+    
   }
   PRINTDINIT("Initial AST mask %#lx\n", asteroidmask);
 }
@@ -707,6 +713,18 @@ void draw_bullets(void)
 
 void break_asteroid(asteroid_t *asteroid, int idx)
 {
+  /* Check for loot */
+  int loot = dispatch_loot_table(asteroid->loot_table);
+  switch (loot) {
+  case BOMB:
+    break;
+  case HP:
+    break;
+  case EXTRA_SCORE:
+    score += 10000000; // TODO(David): change this nonsense. This is for testing purposes
+    break;
+  }
+  
   /* Check asteroid type */
   int size = asteroid_size(asteroid->radius);
   /* Free asteroid struct position */
