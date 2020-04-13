@@ -171,6 +171,11 @@ int main(int argc, char *argv[])
         if (enemy_ships[i].state) // not inactive
           draw_enemy_ship(&enemy_ships[i]);
 #endif
+
+      if (game_state == GAMEOVER_GAMESTATE) {
+        draw_gameover_fade();
+      }
+    
       C2D_Flush();
 
       /* Draw to bottom screen */
@@ -1006,4 +1011,10 @@ void gameover_logic(void)
   gameover_remaining_seconds = GAMEOVER_SCREEN_TIME/60 - ((framecount - gameover_frame) / 60);
   if (gameover_remaining_seconds <= 0)
     reset_game();
+}
+
+void draw_gameover_fade(void)
+{
+  u32 color = C2D_Color32f(0.0f, 0.0f, 0.0f, 0.0f + (framecount - gameover_frame)/300.0f);
+  C2D_DrawRectSolid(0.0f, 0.0f, 1.0f, TOP_SCREEN_WIDTH, TOP_SCREEN_HEIGHT, color);
 }

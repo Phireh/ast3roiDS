@@ -438,6 +438,7 @@ void draw_score(void);
 void draw_health(void);
 void draw_gameover_screen(void);
 void gameover_logic(void);
+void draw_gameover_fade(void);
 
 /* Function pointers. */
 void (*draw_player)    (void)                = draw_player_sprite;
