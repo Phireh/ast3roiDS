@@ -44,14 +44,17 @@
 // Gameplay config macros
 #define PLAYER_SAFE_ZONE_RADIUS 60.0f
 #define PLAYER_STARTING_HP      3
+#define GRACE_PERIOD_AFTER_HIT  120
+#define BULLET_INITIAL_SPEED    4.0f
+
+#define GAMEOVER_SCREEN_TIME    600
+
+#define MAX_ASTEROID_SIZE       40.0f
 #define ASTEROID_NUMBER         10
 #define ASTEROID_MAXSPEED       0.5f
-#define BULLET_INITIAL_SPEED    4.0f
-#define MAX_ASTEROID_SIZE       40.0f
 #define ASTEROID_BIG_RATIO      0.8f
 #define ASTEROID_NORMAL_RATIO   0.5f
 #define ASTEROID_SMALL_RATIO    0.2f
-#define GRACE_PERIOD_AFTER_HIT  30
 #define ASTEROID_SMALL_SCORE    50
 #define ASTEROID_NORMAL_SCORE   100
 #define ASTEROID_BIG_SCORE      200
@@ -62,6 +65,7 @@
 
 // Masks for player effects
 #define PLAYER_EFFECT_BLINKING  (1 << 0)
+#define PLAYER_EFFECT_DEAD      (1 << 1)
 
 typedef enum {
               NORMAL_INPUT,        // 0
@@ -77,9 +81,10 @@ typedef enum {
 } input_return_t;
 
 typedef enum {
-              NORMAL_GAMESTATE, // 0
-              PAUSED_GAMESTATE, // 1
-              TOTAL_GAMESTATE   // 2
+              NORMAL_GAMESTATE,   // 0
+              PAUSED_GAMESTATE,   // 1
+              GAMEOVER_GAMESTATE, // 2
+              TOTAL_GAMESTATE     // 3
 } game_state_t;
 
 typedef enum {
@@ -354,7 +359,7 @@ inline int dispatch_loot_table(loot_table_t table)
 extern inline void print_in_rect(char *s, size_t n, float x, float y, float scale)
 {
   char buf[n];
-  sprintf(buf, "%s", s);
+  stbsp_sprintf(buf, "%s", s);
   C2D_TextBuf text_buf = C2D_TextBufNew(n);
   C2D_Text text;
   C2D_TextParse(&text, text_buf, buf);
@@ -363,6 +368,20 @@ extern inline void print_in_rect(char *s, size_t n, float x, float y, float scal
   C2D_DrawRectSolid(x-1.0f, y-1.0f, 0.9f, w+2.0f, h+2.0f, WHITE);
   C2D_DrawRectSolid(x, y, 0.9f, w, h, BLACK);
   C2D_DrawText(&text, C2D_WithColor, x, y, 1.0f, scale, scale, WHITE);
+}
+
+extern inline void print_in_rect_centered(char *s, size_t n, float x, float y, float scale)
+{
+  char buf[n];
+  stbsp_sprintf(buf, "%s", s);
+  C2D_TextBuf text_buf = C2D_TextBufNew(n);
+  C2D_Text text;
+  C2D_TextParse(&text, text_buf, buf);
+  float w, h;
+  C2D_TextGetDimensions(&text, scale, scale, &w, &h);
+  C2D_DrawRectSolid(x-1.0f-w/2, y-1.0f-h/2, 0.9f, w+2.0f, h+2.0f, WHITE);
+  C2D_DrawRectSolid(x-w/2, y-h/2, 0.9f, w, h, BLACK);
+  C2D_DrawText(&text, C2D_WithColor, x-w/2, y-h/2, 1.0f, scale, scale, WHITE);
 }
 
 // Print a rectangle of color c1, with border of size b and color c2 at profundity p
@@ -417,6 +436,8 @@ int process_input(u32 keys_down, u32 keys_held);
 void reset_game(void);
 void draw_score(void);
 void draw_health(void);
+void draw_gameover_screen(void);
+void gameover_logic(void);
 
 /* Function pointers. */
 void (*draw_player)    (void)                = draw_player_sprite;

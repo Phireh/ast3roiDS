@@ -44,6 +44,8 @@ enemy_ship_t      enemy_ships[MAX_ENEMY_SHIPS];
 pickup_t          pickups[MAX_PICKUPS];
 health_t          health;
 uint              asteroid_spawn_freq = 120;
+uint              gameover_frame;
+uint              gameover_remaining_seconds;
 
 
 /* Main program */
@@ -129,8 +131,7 @@ int main(int argc, char *argv[])
         for (int i = 0; i < MAX_PICKUPS; ++i)
           if (pickups[i].state) // not inactive
             pickup_logic(&pickups[i]);
-        ++framecount;
-
+        
         if (!(framecount % asteroid_spawn_freq)) { // spawn new asteroids naturally
           int side = rand() % 3;
           int n = rand() % 3;
@@ -142,8 +143,12 @@ int main(int argc, char *argv[])
           // case 3: spawn in bottom side
           if (side == 3) spawn_asteroids(240.0f, randf(240.0f)+MAX_ASTEROID_SIZE, ASTEROID_SIZE_BIG, n);
         }
-      } else {
+        ++framecount;
+      } else if (game_state == PAUSED_GAMESTATE) {
         PRINTDLOGIC("Game is paused\n");
+      } else if (game_state == GAMEOVER_GAMESTATE) {
+        gameover_logic();
+        ++framecount;
       }
 
       /** Rendering **/
@@ -171,8 +176,12 @@ int main(int argc, char *argv[])
       /* Draw to bottom screen */
       C2D_TargetClear(bottom, BLACK);
       C2D_SceneBegin(bottom);
-      draw_score();
-      draw_health();
+      if (game_state == GAMEOVER_GAMESTATE) {
+        draw_gameover_screen();
+      } else {
+        draw_score();
+        draw_health();
+      }
       C3D_FrameEnd(0);
     }
 
@@ -250,6 +259,7 @@ void init_player()
   player_ship.radius = 10.0f;
   player_ship.health = PLAYER_STARTING_HP;
   player_ship.color  = RED;
+  player_ship.effects &= 0;
 
   /* Sprite initialization for graphics */
   C2D_SpriteFromSheet(&player_ship.sprites[SPRITE_PLAYER_NORMAL], player_spritesheet, SPRITE_PLAYER_NORMAL);
@@ -357,10 +367,10 @@ void asteroid_logic(void)
         /* Only hit player once per grace period */
         if (framecount - last_hit_frame > GRACE_PERIOD_AFTER_HIT) {
           player_ship.health--;
-          player_ship.effects |= PLAYER_EFFECT_BLINKING;
           asteroid->color = RED;
+          last_hit_frame = framecount;
+          player_ship.effects |= PLAYER_EFFECT_BLINKING;
         }
-        last_hit_frame = framecount;
       }
 
       if (new_y > TOP_SCREEN_HEIGHT + radius) {
@@ -436,7 +446,7 @@ void draw_player_sprite()
 {
   C2D_SpriteSetPos(&player_ship.sprites[player_ship.curr_sprite], player_ship.x, player_ship.y);
   C2D_SpriteSetRotation(&player_ship.sprites[player_ship.curr_sprite], C3D_AngleFromDegrees(-player_ship.angle+90.0f));
-  if (player_ship.effects & PLAYER_EFFECT_BLINKING && framecount % 4)
+  if (player_ship.effects & PLAYER_EFFECT_BLINKING && !(framecount % 4))
     return;
   C2D_DrawSprite(&player_ship.sprites[player_ship.curr_sprite]);
 }
@@ -467,45 +477,47 @@ int process_input(u32 keys_down, u32 keys_held)
 {
   // for inputs that do not care about the first press
   u32 input_keys = keys_down | keys_held; 
-  
-  if (input_keys & KEY_CPAD_RIGHT) {
-    PRINTDINPUT("Pressed KEY_CPAD_RIGHT\n");
-    xinput = 1.0f;
-  }
-  if (input_keys & KEY_CPAD_DOWN) {
-    PRINTDINPUT("Pressed KEY_CPAD_DOWN\n");
-    yinput = -1.0f;
-  }
-  if (input_keys & KEY_CPAD_LEFT) {
-    PRINTDINPUT("Pressed KEY_CPAD_LEFT\n");
-    xinput = -1.0f;
-  }
-  if (input_keys & KEY_CPAD_UP) {
-    PRINTDINPUT("Pressed KEY_CPAD_UP\n");
-    yinput = 1.0f;
-    player_ship.curr_sprite = SPRITE_PLAYER_BOOSTING; // boosters ON sprite selected
-  } else {
-    player_ship.curr_sprite = SPRITE_PLAYER_NORMAL;   // boosters OFF sprite selected
-  }
 
-  if (keys_down & KEY_A) {
-    shoot_bullet();
-    PRINTDINPUT("Pressed KEY_A\n");
-  }
+  if (game_state == NORMAL_GAMESTATE) {
+    if (input_keys & KEY_CPAD_RIGHT) {
+      PRINTDINPUT("Pressed KEY_CPAD_RIGHT\n");
+      xinput = 1.0f;
+    }
+    if (input_keys & KEY_CPAD_DOWN) {
+      PRINTDINPUT("Pressed KEY_CPAD_DOWN\n");
+      yinput = -1.0f;
+    }
+    if (input_keys & KEY_CPAD_LEFT) {
+      PRINTDINPUT("Pressed KEY_CPAD_LEFT\n");
+      xinput = -1.0f;
+    }
+    if (input_keys & KEY_CPAD_UP) {
+      PRINTDINPUT("Pressed KEY_CPAD_UP\n");
+      yinput = 1.0f;
+      player_ship.curr_sprite = SPRITE_PLAYER_BOOSTING; // boosters ON sprite selected
+    } else {
+      player_ship.curr_sprite = SPRITE_PLAYER_NORMAL;   // boosters OFF sprite selected
+    }
+
+    if (keys_down & KEY_A) {
+      shoot_bullet();
+      PRINTDINPUT("Pressed KEY_A\n");
+    }
   
-  if (keys_down & KEY_SELECT) {
-    PRINTDINPUT("Pressed KEY_SELECT\n");
-    return EXIT_GAME_INPUT;
-  }
-  if (keys_down & KEY_START) {
-    PRINTDINPUT("Pressed KEY_START\n");
-    return PAUSE_GAME_INPUT;
-  }
+    if (keys_down & KEY_SELECT) {
+      PRINTDINPUT("Pressed KEY_SELECT\n");
+      return EXIT_GAME_INPUT;
+    }
+    if (keys_down & KEY_START) {
+      PRINTDINPUT("Pressed KEY_START\n");
+      return PAUSE_GAME_INPUT;
+    }
 
 #ifdef DEBUG_MODE
-  if (keys_down & KEY_B)
-    return DEBUG_ENEMIES_INPUT;
+    if (keys_down & KEY_B)
+      return DEBUG_ENEMIES_INPUT;
 #endif
+  }
   return NORMAL_INPUT;
 }
 
@@ -515,8 +527,13 @@ void player_logic()
 
   /* If player is dead, reset game and return */
   // TODO: game-over screen and better things here
-  if (player_ship.health == 0)
-    reset_game();
+  if (player_ship.health == 0) {
+    player_ship.effects &= 0;
+    player_ship.effects |= (PLAYER_EFFECT_DEAD);
+    game_state = GAMEOVER_GAMESTATE;
+    gameover_frame = framecount;
+    return;
+  }
   
   /* Apply input sensitivity */
   xinput = xinput * xinput_sensitivity;
@@ -567,9 +584,9 @@ void player_logic()
   rotate_2f_deg(&player_ship.v2, xinput);
   rotate_2f_deg(&player_ship.v3, xinput);
 
-  /* Get rid of blinking effect if needed */
+  /* Get rid / apply blinking effect if needed */
   player_ship.effects &= framecount - last_hit_frame < GRACE_PERIOD_AFTER_HIT ?
-    (~0) : (~PLAYER_EFFECT_BLINKING);
+    (~0) : ~(PLAYER_EFFECT_BLINKING);
 }
 
 void enemy_ship_logic(enemy_ship_t *enemy)
@@ -910,14 +927,19 @@ void draw_pickup(pickup_t *pickup)
   int nsprites = pickup->nsprites;
   int curr_sprite = pickup->curr_sprite;
   int anim_speed = pickup->anim_speed;
+
+  if (game_state == NORMAL_GAMESTATE) {
   
-  if (anim_speed) {
-    if (!(framecount % anim_speed)) ++curr_sprite;
-    curr_sprite = curr_sprite >= nsprites ? 0 : curr_sprite;
-    the_sprite = &pickup->sprites[curr_sprite];
-    pickup->curr_sprite = curr_sprite;
+    if (anim_speed) {
+      if (!(framecount % anim_speed)) ++curr_sprite;
+      curr_sprite = curr_sprite >= nsprites ? 0 : curr_sprite;
+      the_sprite = &pickup->sprites[curr_sprite];
+      pickup->curr_sprite = curr_sprite;
+    } else {
+      the_sprite = &pickup->sprites[0]; // no animation
+    }
   } else {
-    the_sprite = &pickup->sprites[0]; // no animation
+    the_sprite = &pickup->sprites[curr_sprite];
   }
 
   /* Draw animation */
@@ -956,6 +978,7 @@ void draw_background_static(C2D_Sprite *background)
 
 void reset_game(void)
 {
+  game_state = NORMAL_GAMESTATE;
   asteroidmask = 0;
   bulletmask = 0;
   framecount = 0;
@@ -967,4 +990,20 @@ void reset_game(void)
   
   init_player();
   init_asteroids(ASTEROID_NUMBER);
+}
+
+void draw_gameover_screen(void)
+{
+  /* TODO: Do something better here */
+  print_in_rect_centered("GAME OVER", sizeof("GAME OVER"), BOTTOM_SCREEN_WIDTH/2, BOTTOM_SCREEN_HEIGHT/2, 1.5f);
+  char buf[32];
+  stbsp_sprintf(buf, "Time remaining: %ds", gameover_remaining_seconds);
+  print_in_rect_centered(buf, 32, BOTTOM_SCREEN_WIDTH/2, BOTTOM_SCREEN_HEIGHT/2 + 40.0f, 1.0f);
+}
+
+void gameover_logic(void)
+{
+  gameover_remaining_seconds = GAMEOVER_SCREEN_TIME/60 - ((framecount - gameover_frame) / 60);
+  if (gameover_remaining_seconds <= 0)
+    reset_game();
 }
