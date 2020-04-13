@@ -11,3 +11,8 @@ romfs
 *.3dsx
 *.elf
 *.smdh
+
+# Ignore GNU global files for C tags
+GPATH
+GRTAGS
+GTAGS
