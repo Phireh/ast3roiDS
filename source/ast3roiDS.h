@@ -19,7 +19,7 @@
 #define STB_SPRINTF_IMPLEMENTATION
 #include "stb/stb_sprintf.h"
 // NOTE(David): Commented until we use this to clean unused var warnings
-// #include "stb/stretchy_buffer.h"
+#include "stb/stretchy_buffer.h"
 
 /* Defines */
 
@@ -336,6 +336,11 @@ typedef struct health_t {
     float y;
 } health_t;
 
+typedef struct score_record_t {
+  char name[64];
+  int score;
+} score_record_t;
+
 
 inline int asteroid_size(float radius)
 {
@@ -439,6 +444,8 @@ void draw_health(void);
 void draw_gameover_screen(void);
 void gameover_logic(void);
 void draw_gameover_fade(void);
+void saving_score_logic(void);
+void write_score_to_disk(char *name, int score);
 
 /* Function pointers. */
 void (*draw_player)    (void)                = draw_player_sprite;

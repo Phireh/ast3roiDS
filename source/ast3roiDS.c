@@ -44,8 +44,10 @@ enemy_ship_t      enemy_ships[MAX_ENEMY_SHIPS];
 pickup_t          pickups[MAX_PICKUPS];
 health_t          health;
 uint              asteroid_spawn_freq = 120;
-uint              gameover_frame;
-uint              gameover_remaining_seconds;
+
+int              gameover_frame;
+int              gameover_remaining_seconds;
+int              saving_score;
 
 
 /* Main program */
@@ -147,8 +149,12 @@ int main(int argc, char *argv[])
       } else if (game_state == PAUSED_GAMESTATE) {
         PRINTDLOGIC("Game is paused\n");
       } else if (game_state == GAMEOVER_GAMESTATE) {
-        gameover_logic();
-        ++framecount;
+        if (saving_score) {
+          saving_score_logic();
+        } else {
+          gameover_logic();
+          ++framecount;
+        }
       }
 
       /** Rendering **/
@@ -194,6 +200,7 @@ int main(int argc, char *argv[])
   C2D_Fini();
   C3D_Fini();
   gfxExit();
+  sdmcExit();
   return 0;
 }
 
@@ -522,7 +529,12 @@ int process_input(u32 keys_down, u32 keys_held)
     if (keys_down & KEY_B)
       return DEBUG_ENEMIES_INPUT;
 #endif
+  } else if (game_state == GAMEOVER_GAMESTATE) {
+    if (keys_down & KEY_A) {
+      saving_score = score;
+    }
   }
+  
   return NORMAL_INPUT;
 }
 
@@ -1004,6 +1016,11 @@ void draw_gameover_screen(void)
   char buf[32];
   stbsp_sprintf(buf, "Time remaining: %ds", gameover_remaining_seconds);
   print_in_rect_centered(buf, 32, BOTTOM_SCREEN_WIDTH/2, BOTTOM_SCREEN_HEIGHT/2 + 40.0f, 1.0f);
+
+  if (score) {
+    stbsp_sprintf(buf, "Press A to save your score", gameover_remaining_seconds);
+    print_in_rect_centered(buf, 32, BOTTOM_SCREEN_WIDTH/2, BOTTOM_SCREEN_HEIGHT -10.0f, 0.8f);
+  }
 }
 
 void gameover_logic(void)
@@ -1017,4 +1034,72 @@ void draw_gameover_fade(void)
 {
   u32 color = C2D_Color32f(0.0f, 0.0f, 0.0f, 0.0f + (framecount - gameover_frame)/300.0f);
   C2D_DrawRectSolid(0.0f, 0.0f, 1.0f, TOP_SCREEN_WIDTH, TOP_SCREEN_HEIGHT, color);
+}
+
+void saving_score_logic()
+{
+  static char hint_buf[64], input_buf[64];
+  if (saving_score) {
+    SwkbdState       swkbd;
+    SwkbdButton      button_pressed = SWKBD_BUTTON_NONE;
+    stbsp_sprintf(hint_buf, "Enter your name to save your score -> %d", saving_score);
+    swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 2, -1);
+    swkbdSetValidation(&swkbd, SWKBD_NOTEMPTY_NOTBLANK | SWKBD_FILTER_AT, 0, 0);
+    swkbdSetHintText(&swkbd, hint_buf);
+    /* swkbdSetButton(&swkbd, SWKBD_BUTTON_LEFT, "Cancel", false); */
+    /* swkbdSetButton(&swkbd, SWKBD_BUTTON_MIDDLE, "OK", true); */
+    /* The system OS stops us here until the user is done inputting text */
+    button_pressed = swkbdInputText(&swkbd, input_buf, sizeof(input_buf));
+    /* We resume execution here */
+    if (button_pressed == SWKBD_BUTTON_CONFIRM) {
+      write_score_to_disk(input_buf, saving_score);
+      saving_score = 0;
+    } else {
+      saving_score = 0;
+    }
+  }
+}
+
+void write_score_to_disk(char *name, int score_to_save)
+{
+
+  FILE *fr = fopen("test.txt", "r");
+  score_record_t *records = NULL;
+
+  if (fr) {
+    /* Read all records */
+    do {
+      score_record_t new_record;
+      if (fscanf(fr, "%s\n", new_record.name) == EOF) break;
+      if (fscanf(fr, "@%d\n", &new_record.score) == EOF) break;
+      sb_push(records, new_record);
+    } while(1);
+    fclose(fr);
+  }
+
+  /* Add our score to the record list */
+  score_record_t last_score;
+  strcpy(last_score.name, name);
+  last_score.score = score_to_save;
+  sb_push(records, last_score);
+  
+  /* Reorder scores */
+  for (int i = 0; i < sb_count(records); ++i) {
+    for (int j = 0; j < i; ++j) {
+      if (records[j].score < records[i].score) {
+        score_record_t tmp = records[j];
+        records[j] = records[i];
+        records[i] = tmp;
+      }
+    }
+  }
+
+  /* Rewrite ordered scores */
+  FILE *fw = fopen("test.txt", "w");
+  for (int i = 0; i < sb_count(records); ++i) {
+    fprintf(fw, "%s\n", records[i].name);
+    fprintf(fw, "@%d\n", records[i].score);
+  }
+  fclose(fw);
+  sb_free(records);
 }
