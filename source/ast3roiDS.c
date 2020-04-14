@@ -49,6 +49,11 @@ int              gameover_frame;
 int              gameover_remaining_seconds;
 int              saving_score;
 
+#ifdef DEBUG_MODE
+FILE            *_debug_log;
+bool             _writing_log = false;
+#endif
+
 
 /* Main program */
 int main(int argc, char *argv[])
@@ -65,8 +70,7 @@ int main(int argc, char *argv[])
   C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
   C2D_Prepare();
 
-  /* TODO: This does not work anymore until we fix debug mode */
-  // initializes console if necessary
+  // initializes debug file if necessary
   CHECKDEBUGMODE;
 
   top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
@@ -145,7 +149,7 @@ int main(int argc, char *argv[])
           // case 3: spawn in bottom side
           if (side == 3) spawn_asteroids(240.0f, randf(240.0f)+MAX_ASTEROID_SIZE, ASTEROID_SIZE_BIG, n);
         }
-        ++framecount;
+        ++framecount; PRINTFRAME;
       } else if (game_state == PAUSED_GAMESTATE) {
         PRINTDLOGIC("Game is paused\n");
       } else if (game_state == GAMEOVER_GAMESTATE) {
@@ -153,7 +157,7 @@ int main(int argc, char *argv[])
           saving_score_logic();
         } else {
           gameover_logic();
-          ++framecount;
+          ++framecount; PRINTFRAME;
         }
       }
 
