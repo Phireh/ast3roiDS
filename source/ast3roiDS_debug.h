@@ -19,37 +19,37 @@
 #endif
 
 #ifdef DEBUG_INPUT
-#define PRINTDINPUT(fmt, ...)      _writing_log = true; fprintf(_debug_log, fmt, ##__VA_ARGS__)
+#define PRINTDINPUT(fmt, ...)      if((_writing_log = true)) fprintf(_debug_log, fmt, ##__VA_ARGS__)
 #else
 #define PRINTDINPUT(fmt, ...) 
 #endif
 
 #ifdef DEBUG_LOGIC
-#define PRINTDLOGIC(fmt, ...)      _writing_log = true; fprintf(_debug_log, fmt, ##__VA_ARGS__)
+#define PRINTDLOGIC(fmt, ...)      if((_writing_log = true)) fprintf(_debug_log, fmt, ##__VA_ARGS__)
 #else
 #define PRINTDLOGIC(fmt, ...)
 #endif
 
 #ifdef DEBUG_RENDER
-#define PRINTDRENDER(fmt, ...)     _writing_log = true; fprintf(_debug_log, fmt, ##__VA_ARGS__)
+#define PRINTDRENDER(fmt, ...)     if((_writing_log = true)) fprintf(_debug_log, fmt, ##__VA_ARGS__)
 #else
 #define PRINTDRENDER(fmt, ...)
 #endif
 
 #ifdef DEBUG_INIT
-#define PRINTDINIT(fmt, ...)       _writing_log = true; fprintf(_debug_log, fmt, ##__VA_ARGS__)
+#define PRINTDINIT(fmt, ...)       if((_writing_log = true)) fprintf(_debug_log, fmt, ##__VA_ARGS__)
 #else
 #define PRINTDINIT(fmt, ...)
 #endif
 
 #ifdef DEBUG_COLLISION
-#define PRINTDCOLLISION(fmt, ...)  _writing_log = true; fprintf(_debug_log, fmt, ##__VA_ARGS__)
+#define PRINTDCOLLISION(fmt, ...)  if((_writing_log = true)) fprintf(_debug_log, fmt, ##__VA_ARGS__)
 #else
 #define PRINTDCOLLISION(fmt, ...) 
 #endif
 
 #ifdef DEBUG_BULLETS
-#define PRINTDBULLETS(fmt, ...)    _writing_log = true; fprintf(_debug_log, fmt, ##__VA_ARGS__)
+#define PRINTDBULLETS(fmt, ...)    if((_writing_log = true)) fprintf(_debug_log, fmt, ##__VA_ARGS__)
 #else
 #define PRINTDBULLETS(fmt, ...) 
 #endif
