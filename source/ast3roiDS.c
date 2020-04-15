@@ -637,7 +637,6 @@ void enemy_ship_logic(enemy_ship_t *enemy)
   /* We calculate the direction towards the player ship. Then we calculate if we would
    * approximate that vector by going to the right or left using the scalar product */
   
-  /* NOTE(David): Is this really the most efficient way to track the player ? */
   vec2f look_at_player_v;
   look_at_player_v.x = player_ship.x - new_x;
   look_at_player_v.y = player_ship.y - new_y;
@@ -663,10 +662,7 @@ void enemy_ship_logic(enemy_ship_t *enemy)
   } else if (turn_right_proj > curr_direction_proj) { // turn right
     angle_delta = -enemy->turnrate;
     enemy->angle = clamp_deg(angle + angle_delta);
-  } else {                                       // lock to target
-    //enemy->angle = clamp_deg(vec_to_angle(look_at_player_v));
-    //angle_delta = enemy->angle - angle;
-  }
+  } 
 
   /* Update vertex positions for figure */
   rotate_2f_deg(&enemy->v1, -angle_delta);
@@ -1050,8 +1046,6 @@ void saving_score_logic()
     swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 2, -1);
     swkbdSetValidation(&swkbd, SWKBD_NOTEMPTY_NOTBLANK | SWKBD_FILTER_AT, 0, 0);
     swkbdSetHintText(&swkbd, hint_buf);
-    /* swkbdSetButton(&swkbd, SWKBD_BUTTON_LEFT, "Cancel", false); */
-    /* swkbdSetButton(&swkbd, SWKBD_BUTTON_MIDDLE, "OK", true); */
     /* The system OS stops us here until the user is done inputting text */
     button_pressed = swkbdInputText(&swkbd, input_buf, sizeof(input_buf));
     /* We resume execution here */
