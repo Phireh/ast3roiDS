@@ -402,48 +402,63 @@ inline int inside_top_screen(float x, float y)
   return inside_rect(x, y, 0.0f, TOP_SCREEN_WIDTH, 0.0f, TOP_SCREEN_HEIGHT);
 }
 
-/* Functions */
+/** Function signatures **/
 
+
+/* Initialization */
 void init_sprites(void);
-
+void init_player();
 void init_asteroids(int n);
+void init_health();
+
+
+/* Asteroids */
 void asteroid_logic();
 void spawn_asteroids(float x, float y, asteroid_size_t size, int n);
 void break_asteroid(asteroid_t *asteroid, int idx);
+void draw_asteroids_sprite(void);
+void draw_asteroids_nosprite(void);
+int natural_asteroid_spawn(int freq);
 
-void init_player();
-void player_logic();
-
-void init_health();
-
+/* Enemies */
 enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32 color);
 void draw_enemy_ship_sprite(enemy_ship_t *enemy);
 void draw_enemy_ship_nosprite(enemy_ship_t *enemy);
 void enemy_ship_logic(enemy_ship_t *enemy);
+int natural_enemy_spawn(int freq);
 
+/* Player */
+void player_logic();
 void draw_player_sprite(void);
 void draw_player_nosprite(void);
 
-void draw_asteroids_sprite(void);
-void draw_asteroids_nosprite(void);
-
+/* Bullets */
 void shoot_bullet(void);
 void bullet_logic(void);
 void draw_bullets(void);
 
+/* Pickups */
 pickup_t spawn_pickup(int type, float x, float y, float xs, float ys, float r, u32 color);
 void pickup_logic(pickup_t *pickup);
 void draw_pickup(pickup_t *pickup);
 
+/* Background */
 void draw_background_static(C2D_Sprite *background);
 
+/* Input */
 int process_input(u32 keys_down, u32 keys_held);
-void reset_game(void);
+
+/* UI */
 void draw_score(void);
 void draw_health(void);
+
+/* Gameover */
 void draw_gameover_screen(void);
 void gameover_logic(void);
 void draw_gameover_fade(void);
+void reset_game(void);
+
+/* Writing to disk */
 void saving_score_logic(void);
 void write_score_to_disk(char *name, int score);
 

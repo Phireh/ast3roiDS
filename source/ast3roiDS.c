@@ -43,7 +43,8 @@ bullet_t          bullets[MAX_BULLETS];
 enemy_ship_t      enemy_ships[MAX_ENEMY_SHIPS];
 pickup_t          pickups[MAX_PICKUPS];
 health_t          health;
-uint              asteroid_spawn_freq = 120;
+int               asteroid_spawn_freq = 120;
+int               enemy_spawn_freq = 300;
 
 int              gameover_frame;
 int              gameover_remaining_seconds;
@@ -128,27 +129,17 @@ int main(int argc, char *argv[])
         player_logic();
         bullet_logic();
         asteroid_logic();
-#ifdef DEBUG_MODE
+        
         for (int i = 0; i < MAX_ENEMY_SHIPS; ++i)
           if (enemy_ships[i].state) // not inactive
             enemy_ship_logic(&enemy_ships[i]);
-#endif
 
         for (int i = 0; i < MAX_PICKUPS; ++i)
           if (pickups[i].state) // not inactive
             pickup_logic(&pickups[i]);
-        
-        if (!(framecount % asteroid_spawn_freq)) { // spawn new asteroids naturally
-          int side = rand() % 3;
-          int n = rand() % 3;
 
-          // case 1: spawn in left side
-          if (side == 1) spawn_asteroids(-MAX_ASTEROID_SIZE, randf(240.0f), ASTEROID_SIZE_BIG, n);
-          // case 2: spawn in top side
-          if (side == 2) spawn_asteroids(randf(400.0f), -MAX_ASTEROID_SIZE, ASTEROID_SIZE_BIG, n);
-          // case 3: spawn in bottom side
-          if (side == 3) spawn_asteroids(240.0f, randf(240.0f)+MAX_ASTEROID_SIZE, ASTEROID_SIZE_BIG, n);
-        }
+        natural_asteroid_spawn(asteroid_spawn_freq);
+        natural_enemy_spawn(enemy_spawn_freq);
         ++framecount; PRINTFRAME;
       } else if (game_state == PAUSED_GAMESTATE) {
         PRINTDLOGIC("Game is paused\n");
@@ -176,11 +167,9 @@ int main(int argc, char *argv[])
           draw_pickup(&pickups[i]);
         }
       }
-#ifdef DEBUG_MODE
       for (int i = 0; i < MAX_ENEMY_SHIPS; ++i)
         if (enemy_ships[i].state) // not inactive
           draw_enemy_ship(&enemy_ships[i]);
-#endif
 
       if (game_state == GAMEOVER_GAMESTATE) {
         draw_gameover_fade();
@@ -752,6 +741,31 @@ void draw_enemy_ship_nosprite(enemy_ship_t *enemy_ship)
 
 }
 
+int natural_enemy_spawn(int freq)
+{
+  enemy_ship_t *enemy = NULL;
+  int i = 0;
+  for (; i < MAX_ENEMY_SHIPS; ++i)
+    if (enemy_ships[i].state == ENEMY_STATE_INACTIVE) {
+      enemy = &enemy_ships[i];
+      break;
+    }
+  if (!enemy) return 0;
+  int side;
+  float r = 10.0f;
+  if (!(framecount % freq)) { // spawn new asteroids naturally
+    side = rand() % 3;
+    // case 1: spawn in left side
+    if (side == 1) *enemy = spawn_enemy_ship(-r, randf(240.0f), randf2(-1.0f, 1.0f), randf2(-1.0f, 1.0f), r, WHITE);
+    // case 2: spawn in top side
+    if (side == 2) *enemy = spawn_enemy_ship(randf(400.0f), -r, randf2(-1.0f, 1.0f), randf2(-1.0f, 1.0f), r, WHITE);
+    // case 3: spawn in bottom side
+    if (side == 3) *enemy = spawn_enemy_ship(240.0f, randf(240.0f), randf2(-1.0f, 1.0f), randf2(-1.0f, 1.0f), r, WHITE);
+  }
+
+  return 1;
+}
+
 void bullet_logic(void)
 {
   int i = 0;
@@ -882,6 +896,24 @@ void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
   }
 }
 
+/* Makes new asteroids spawn from the sides of the screen */
+int natural_asteroid_spawn(int freq)
+{
+  int n = 0, side;
+  if (!(framecount % freq)) { // spawn new asteroids naturally
+    side = rand() % 3;
+    n = rand() % 3;
+
+    // case 1: spawn in left side
+    if (side == 1) spawn_asteroids(-MAX_ASTEROID_SIZE, randf(240.0f), ASTEROID_SIZE_BIG, n);
+    // case 2: spawn in top side
+    if (side == 2) spawn_asteroids(randf(400.0f), -MAX_ASTEROID_SIZE, ASTEROID_SIZE_BIG, n);
+    // case 3: spawn in bottom side
+    if (side == 3) spawn_asteroids(240.0f, randf(240.0f)+MAX_ASTEROID_SIZE, ASTEROID_SIZE_BIG, n);
+  }
+  return n;
+}
+
 pickup_t spawn_pickup(int type, float x, float y, float xs, float ys, float r, u32 color)
 {
   pickup_t new_pickup = {
@@ -1001,6 +1033,10 @@ void reset_game(void)
   framecount = 0;
   last_hit_frame = 0;
   score = 0;
+  player_ship.effects = 0;
+
+  for (int i = 0; i < MAX_ENEMY_SHIPS; ++i)
+    enemy_ships[i].state = ENEMY_STATE_INACTIVE;
 
   /* NOTE(David): at the moment init_sprites() should not be called here.
      This may change at some point if we free graphics memory in-between levels */
