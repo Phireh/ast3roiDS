@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
       case DEBUG_ENEMIES_INPUT:
         for (int i = 0; i < MAX_ENEMY_SHIPS; ++i) {
           if (!enemy_ships[i].state) {// inactive
-            enemy_ships[i] = spawn_enemy_ship(200.0f, 120.0f, 1.0f, 1.0f, 10.0f, RED);
+            enemy_ships[i] = spawn_enemy_ship(200.0f, 120.0f, 1.0f, 1.0f, 20.0f, RED);
             break;
           }
         }
@@ -601,6 +601,13 @@ void player_logic()
 
 void enemy_ship_logic(enemy_ship_t *enemy)
 {
+
+  if (!enemy->health) {
+    enemy->state = ENEMY_STATE_INACTIVE;
+    return;
+  }
+
+  
   float old_x = enemy->x;
   float old_y = enemy->y;
   float new_x = old_x + enemy->xspeed;
@@ -697,7 +704,7 @@ enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32
   .radius       = r,
   .color        = color,
   .angle        = 90.0f,
-  .health       = TODO_CHANGEME,
+  .health       = 1,
   .turnrate     = 5.5f,
   .state        = ENEMY_STATE_ACTIVE,  
   .vertices[X0] = -r,
@@ -752,7 +759,7 @@ int natural_enemy_spawn(int freq)
     }
   if (!enemy) return 0;
   int side;
-  float r = 10.0f;
+  float r = 20.0f;
   if (!(framecount % freq)) { // spawn new asteroids naturally
     side = rand() % 3;
     // case 1: spawn in left side
@@ -776,6 +783,17 @@ void bullet_logic(void)
       bullets[i].x = bx;
       bullets[i].y = by;
 
+      /* Check for enemy hit */
+      enemy_ship_t *enemy = NULL;
+      for (int k = 0; k < MAX_ENEMY_SHIPS; ++k)
+        if ((enemy = &enemy_ships[i]) && enemy->state == ENEMY_STATE_ACTIVE &&
+            inside_circle(bx,by,enemy->x,enemy->y,enemy->radius)) {
+          bulletmask = bulletmask & ~(1 << i);
+          --enemy->health;
+          return;
+        }
+          
+
       /* Check for asteroid hit */
 
       // Ignore inactive asteroids
@@ -790,14 +808,14 @@ void bullet_logic(void)
             /* TODO: FX on bullet hit */
             bulletmask = bulletmask & ~(1 << i);
             break_asteroid(&asteroids[j], j);
+            return;
           }
         }
-
-        /* If bullet went out of bounds we disable it */
-        if (!(inside_top_screen(bx, by))) {
-          PRINTDBULLETS("Bullet went out of screen");
-          bulletmask &= ~(1 << i);
-        }
+      }
+      /* If bullet went out of bounds we disable it */
+      if (!(inside_top_screen(bx, by))) {
+        PRINTDBULLETS("Bullet went out of screen");
+        bulletmask &= ~(1 << i);
       }
     }
   }
