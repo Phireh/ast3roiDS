@@ -86,14 +86,16 @@ typedef enum {
               NORMAL_GAMESTATE,   // 0
               PAUSED_GAMESTATE,   // 1
               GAMEOVER_GAMESTATE, // 2
-              START_GAMESTATE,
-              TOTAL_GAMESTATE     // 3
+              START_GAMESTATE,    // 3
+              SCORE_GAMESTATE,    // 4
+              TOTAL_GAMESTATE     // 5
 } game_state_t;
 
 typedef enum {
               PLAY_OPTION,    // 0
               EXIT_OPTION,    // 1
-              TOTAL_OPTIONS   // 2
+              SCORE_OPTION,   // 2
+              TOTAL_OPTION    // 3
 } main_menu_options_t;
 
 typedef enum {
@@ -486,6 +488,9 @@ void draw_pointer(void);
 /* Writing to disk */
 void saving_score_logic(void);
 void write_score_to_disk(char *name, int score);
+
+/* Read from file */
+void show_score(void);
 
 /* Function pointers. */
 void (*draw_player)    (void)                = draw_player_sprite;

@@ -15,6 +15,9 @@ C2D_TextBuf       score_text_buffer;
 C2D_Text          start_game_text;
 C2D_TextBuf       start_game_buffer;
 
+C2D_Text          score_text;
+C2D_TextBuf       score_buffer;
+
 C2D_Text          exit_game_text;
 C2D_TextBuf       exit_game_buffer;
 
@@ -172,7 +175,7 @@ int main(int argc, char *argv[])
       C2D_TargetClear(top, BLACK);
       C2D_SceneBegin(top);
 
-      if (game_state != START_GAMESTATE){
+      if (game_state != START_GAMESTATE && game_state != SCORE_GAMESTATE){
       draw_background_static(&background_static_sprite);
       draw_player();
       draw_bullets();
@@ -196,6 +199,7 @@ int main(int argc, char *argv[])
        if (game_state == START_GAMESTATE) {
         draw_title();
       }
+
     
       C2D_Flush();
 
@@ -210,6 +214,8 @@ int main(int argc, char *argv[])
       } else if (game_state == START_GAMESTATE) {
         draw_main_menu();
         draw_pointer();
+      } else if (game_state == SCORE_GAMESTATE) {
+        show_score();
       }
       C3D_FrameEnd(0);
     }
@@ -571,18 +577,23 @@ int process_input(u32 keys_down, u32 keys_held)
   } else if (game_state == START_GAMESTATE) {
       if (keys_down & KEY_A) {
         if (main_menu_selected == PLAY_OPTION) { game_state = NORMAL_GAMESTATE; }
+        else if(main_menu_selected == SCORE_OPTION){  game_state = SCORE_GAMESTATE; }
         else { return EXIT_GAME_INPUT; }
       }
 
       if (keys_down & KEY_UP) {
         if (main_menu_selected == PLAY_OPTION) { main_menu_selected = EXIT_OPTION; }
-        else { main_menu_selected = PLAY_OPTION; }
+        else if (main_menu_selected == SCORE_OPTION){ main_menu_selected = PLAY_OPTION; }
+        else { main_menu_selected = SCORE_OPTION; }
       }
 
     if (keys_down & KEY_DOWN) {
-        if (main_menu_selected == PLAY_OPTION) { main_menu_selected = EXIT_OPTION;}
-        else  { main_menu_selected = PLAY_OPTION; }
+        if (main_menu_selected == PLAY_OPTION) { main_menu_selected = SCORE_OPTION;}
+        else if (main_menu_selected == SCORE_OPTION){ main_menu_selected = EXIT_OPTION; }
+        else { main_menu_selected = PLAY_OPTION; }
       }
+    } else if(game_state == SCORE_GAMESTATE) {
+      if (keys_down & KEY_A) { game_state = START_GAMESTATE; }
     }
   
   return NORMAL_INPUT;
@@ -1152,14 +1163,21 @@ void draw_main_menu(void)
  
   start_game_buffer = C2D_TextBufNew(SCORE_TEXT_LENGTH);
   C2D_TextParse(&start_game_text, start_game_buffer, start_buf);
-  C2D_DrawText(&start_game_text, C2D_WithColor, 70.0f, 50.0f, 0.0f, 1.0f, 1.0f, WHITE);
+  C2D_DrawText(&start_game_text, C2D_WithColor, 70.0f, 40.0f, 0.0f, 1.0f, 1.0f, WHITE);
+
+  char score_buf[SCORE_TEXT_LENGTH];
+  stbsp_sprintf(score_buf, "Score");
+ 
+  score_buffer = C2D_TextBufNew(SCORE_TEXT_LENGTH);
+  C2D_TextParse(&score_text, score_buffer, score_buf);
+  C2D_DrawText(&score_text, C2D_WithColor, 70.0f, 90.0f, 0.0f, 1.0f, 1.0f, WHITE);
 
   char exit_buf[SCORE_TEXT_LENGTH];
   stbsp_sprintf(exit_buf, "Exit");
  
   exit_game_buffer = C2D_TextBufNew(SCORE_TEXT_LENGTH);
   C2D_TextParse(&exit_game_text, exit_game_buffer, exit_buf);
-  C2D_DrawText(&exit_game_text, C2D_WithColor, 70.0f, 100.0f, 0.0f, 1.0f, 1.0f, WHITE);
+  C2D_DrawText(&exit_game_text, C2D_WithColor, 70.0f, 140.0f, 0.0f, 1.0f, 1.0f, WHITE);
 
 }
 
@@ -1172,11 +1190,15 @@ void draw_title(void)
 void draw_pointer(void)
 {
   if(main_menu_selected == PLAY_OPTION){
-    C2D_SpriteSetPos(&pointer_sprite, 45.0f , 65.0f);
+    C2D_SpriteSetPos(&pointer_sprite, 45.0f , 55.0f);
     C2D_DrawSprite(&pointer_sprite);
   }
-  else{
-    C2D_SpriteSetPos(&pointer_sprite, 45.0f , 115.0f);
+  else if(main_menu_selected == SCORE_OPTION){
+    C2D_SpriteSetPos(&pointer_sprite, 45.0f , 105.0f);
+    C2D_DrawSprite(&pointer_sprite);
+  }
+  else{ 
+    C2D_SpriteSetPos(&pointer_sprite, 45.0f , 155.0f);
     C2D_DrawSprite(&pointer_sprite);
   }
 }
@@ -1315,4 +1337,38 @@ void write_score_to_disk(char *name, int score_to_save)
   }
   fclose(fw);
   sb_free(records);
+}
+
+void show_score(void)
+{
+  float initial_x = 50.0f;
+  float initial_y = 40.0f;
+  C2D_Text          s_text;
+  C2D_TextBuf       s_buffer;
+  
+  FILE *fr = fopen("ast3roiDS_scoreboard.txt", "r");
+  score_record_t *records = NULL;
+
+  if (fr) {
+    /* Read all records */
+    do {
+      score_record_t new_record;
+      if (fscanf(fr, "%s\n", new_record.name) == EOF) break;
+      if (fscanf(fr, "@%d\n", &new_record.score) == EOF) break;
+      sb_push(records, new_record);
+    } while(1);
+    fclose(fr);
+  }
+  for(int i = 0; i < 5 && i <sb_count(records); i++){
+
+    char buf[SCORE_TEXT_LENGTH];
+    stbsp_sprintf(buf, "%s ——- %d", records[i].name, records[i].score);
+ 
+    s_buffer = C2D_TextBufNew(SCORE_TEXT_LENGTH);
+    C2D_TextParse(&s_text, s_buffer, buf);
+    C2D_DrawText(&s_text, C2D_WithColor, initial_x, initial_y, 0.0f, 1.0f, 1.0f, WHITE);
+
+    initial_y += 15.0f;
+
+  }
 }
