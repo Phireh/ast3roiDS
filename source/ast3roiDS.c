@@ -882,7 +882,8 @@ void bullet_logic(void)
       enemy_bullets[n].y = eby;
 
       /* Check collision with player */
-      if (inside_circle(ebx, eby, player_ship.x, player_ship.y, player_ship.radius)) {
+      if (inside_circle(ebx, eby, player_ship.x, player_ship.y, player_ship.radius) &&
+          framecount - last_hit_frame > GRACE_PERIOD_AFTER_HIT) {
         --player_ship.health;
         last_hit_frame = framecount;
         player_ship.effects = PLAYER_EFFECT_BLINKING;
