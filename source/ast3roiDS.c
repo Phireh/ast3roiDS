@@ -283,6 +283,7 @@ void init_sprites()
     C2D_SpriteFromSheet(&asteroid_sprites[i], asteroid_spritesheet, i);
     C2D_SpriteSetCenter(&asteroid_sprites[i], 0.5f, 0.5f);
   }
+  C2D_SpriteScale(&asteroid_sprites[SPRITE_ASTEROID_BIG], 0.8f, 0.8f); // hack to make big asteroids look better
   
   C2D_SpriteFromSheet(&enemy_sprites[SPRITE_ENEMY_NORMAL], enemy_spritesheet, SPRITE_ENEMY_NORMAL);
   C2D_SpriteSetCenter(&enemy_sprites[SPRITE_ENEMY_NORMAL], 0.5f, 0.5f);
