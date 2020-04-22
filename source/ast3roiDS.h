@@ -29,6 +29,7 @@
 #define BOTTOM_SCREEN_HEIGHT   240
 
 #define MAX_BULLETS              32
+#define MAX_ENEMY_BULLETS        128
 #define MAX_ASTEROIDS            32
 #define MAX_ENEMY_SHIPS          32
 #define MAX_PICKUPS              32
@@ -42,10 +43,11 @@
 #define TODO_CHANGEME            0
 
 // Gameplay config macros
-#define PLAYER_SAFE_ZONE_RADIUS 60.0f
-#define PLAYER_STARTING_HP      3
-#define GRACE_PERIOD_AFTER_HIT  120
-#define BULLET_INITIAL_SPEED    4.0f
+#define PLAYER_SAFE_ZONE_RADIUS   60.0f
+#define PLAYER_STARTING_HP        3
+#define GRACE_PERIOD_AFTER_HIT    120
+#define BULLET_INITIAL_SPEED      4.0f
+#define ENEMY_BULLET_INITIAL_SPEED 1.0f
 
 #define GAMEOVER_SCREEN_TIME    600
 
@@ -95,7 +97,8 @@ typedef enum {
 
 typedef enum {
               SPRITE_BULLET_NORMAL,       // 0
-              SPRITE_BULLET_TOTAL         // 1
+              SPRITE_BULLET_ENEMY,        // 1
+              SPRITE_BULLET_TOTAL         // 2
 } bullet_spritesheet_idx_t;
 
 typedef enum {
@@ -144,6 +147,12 @@ typedef enum {
               PICKUP_STATE_ACTIVE,         // 1
               PICKUP_STATE_TOTAL           // 2
 } pickup_state_t;
+
+typedef enum {
+              BULLET_STATE_INACTIVE,       // 0 
+              BULLET_STATE_ACTIVE,         // 1
+              BULLET_STATE_TOTAL           // 2
+} bullet_state_t;
 
 typedef enum {
               LOOT_TABLE_IDX_NOTHING,     // 0: Get nothing
@@ -267,6 +276,8 @@ typedef struct enemy_ship_t {
   float angle;
   float radius;
   float turnrate;
+  int attspeed;
+  int last_frame_shot;
   int health;
   enemy_state_t state;
   loot_table_t loot_table;
@@ -328,6 +339,7 @@ typedef struct bullet_t {
   };
   
   float angle;
+  int state;
   C2D_Sprite *sprite;
 } bullet_t;
 
@@ -434,6 +446,7 @@ void draw_player_nosprite(void);
 
 /* Bullets */
 void shoot_bullet(void);
+void shoot_enemy_bullet(enemy_ship_t *enemy);
 void bullet_logic(void);
 void draw_bullets(void);
 

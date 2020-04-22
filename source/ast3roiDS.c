@@ -31,6 +31,7 @@ C2D_SpriteSheet   pickup_hp_spritesheet;
 C2D_SpriteSheet   player_health_spritesheet;
 
 C2D_Sprite        bullet_normal_sprite;
+C2D_Sprite        bullet_enemy_sprite;
 C2D_Sprite        background_static_sprite;
 C2D_Sprite        asteroid_sprites[SPRITE_ASTEROID_TOTAL];
 C2D_Sprite        enemy_sprites[SPRITE_ENEMY_TOTAL];
@@ -40,6 +41,7 @@ C2D_Sprite        player_health_sprite[PLAYER_STARTING_HP];
 
 u32               bulletmask; // NOTE: this has to have MAX_BULLETS bits
 bullet_t          bullets[MAX_BULLETS];
+bullet_t          enemy_bullets[MAX_ENEMY_BULLETS];
 enemy_ship_t      enemy_ships[MAX_ENEMY_SHIPS];
 pickup_t          pickups[MAX_PICKUPS];
 health_t          health;
@@ -233,6 +235,9 @@ void init_sprites()
 
   C2D_SpriteFromSheet(&bullet_normal_sprite, bullet_spritesheet, SPRITE_BULLET_NORMAL);
   C2D_SpriteSetCenter(&bullet_normal_sprite, 0.5f, 0.5f);
+
+  C2D_SpriteFromSheet(&bullet_enemy_sprite, bullet_spritesheet, SPRITE_BULLET_ENEMY);
+  C2D_SpriteSetCenter(&bullet_enemy_sprite, 0.5f, 0.5f);
 
   C2D_SpriteFromSheet(&background_static_sprite, background_spritesheet, SPRITE_BACKGROUND_STATIC);
   C2D_SpriteSetCenter(&background_static_sprite, 0.5f, 0.5f);
@@ -658,7 +663,10 @@ void enemy_ship_logic(enemy_ship_t *enemy)
   } else if (turn_right_proj > curr_direction_proj) { // turn right
     angle_delta = -enemy->turnrate;
     enemy->angle = clamp_deg(angle + angle_delta);
-  } 
+  } else if (framecount - enemy->last_frame_shot >= enemy->attspeed) {
+    shoot_enemy_bullet(enemy);
+    enemy->last_frame_shot = framecount;
+  }
 
   /* Update vertex positions for figure */
   rotate_2f_deg(&enemy->v1, -angle_delta);
@@ -694,6 +702,32 @@ void shoot_bullet(void)
   bullets[i].sprite = &bullet_normal_sprite;
 }
 
+void shoot_enemy_bullet(enemy_ship_t *enemy)
+{
+  int i = 0;
+  for (; i < MAX_ENEMY_BULLETS; ++i) {
+    if (!enemy_bullets[i].state) { // inactive, free to use slot
+      
+      enemy_bullets[i].x = enemy->x;
+      enemy_bullets[i].y = enemy->y;
+      enemy_bullets[i].xspeed = enemy->x;
+      enemy_bullets[i].yspeed = enemy->y;
+      float angle = enemy->angle;
+      enemy_bullets[i].angle = angle;
+      
+      /* Check sin and cos this frame */
+      float fsin = sin(deg_to_rad(angle));
+      float fcos = cos(deg_to_rad(angle));
+
+      enemy_bullets[i].xspeed = ENEMY_BULLET_INITIAL_SPEED * fcos;
+      enemy_bullets[i].yspeed = ENEMY_BULLET_INITIAL_SPEED * -fsin;
+      enemy_bullets[i].sprite = &bullet_enemy_sprite;
+      enemy_bullets[i].state = BULLET_STATE_ACTIVE;
+      break;
+    }
+  }
+}
+
 enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32 color)
 {
   enemy_ship_t new_enemy = {
@@ -706,6 +740,7 @@ enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32
   .angle        = 90.0f,
   .health       = 1,
   .turnrate     = 5.5f,
+  .attspeed     = 60,
   .state        = ENEMY_STATE_ACTIVE,  
   .vertices[X0] = -r,
   .vertices[Y0] =  r,
@@ -759,7 +794,7 @@ int natural_enemy_spawn(int freq)
     }
   if (!enemy) return 0;
   int side;
-  float r = 20.0f;
+  float r = 25.0f;
   if (!(framecount % freq)) { // spawn new asteroids naturally
     side = rand() % 3;
     // case 1: spawn in left side
@@ -775,6 +810,29 @@ int natural_enemy_spawn(int freq)
 
 void bullet_logic(void)
 {
+  /* Check enemy bullets */
+  for (int n = 0; n < MAX_ENEMY_BULLETS; ++n) {
+    if (enemy_bullets[n].state) { // not inactive
+      float ebx = enemy_bullets[n].x + enemy_bullets[n].xspeed;
+      float eby = enemy_bullets[n].y + enemy_bullets[n].yspeed;
+      enemy_bullets[n].x = ebx;
+      enemy_bullets[n].y = eby;
+
+      /* Check collision with player */
+      if (inside_circle(ebx, eby, player_ship.x, player_ship.y, player_ship.radius)) {
+        --player_ship.health;
+        last_hit_frame = framecount;
+        player_ship.effects = PLAYER_EFFECT_BLINKING;
+        enemy_bullets[n].state = BULLET_STATE_INACTIVE;
+      }
+      /* Disable bullet if it went offscreen */
+      if (!inside_top_screen(ebx, eby))
+        enemy_bullets[n].state = BULLET_STATE_INACTIVE;
+    }
+  }
+
+
+  /* Check player bullets */
   int i = 0;
   for (; i < MAX_BULLETS; i++) {
     if (bulletmask >> i & 1) {
@@ -823,6 +881,15 @@ void bullet_logic(void)
 
 void draw_bullets(void)
 {
+
+  for (int j = 0; j < MAX_ENEMY_BULLETS; ++j) {
+    if (enemy_bullets[j].state) { // not inactive
+      C2D_SpriteSetPos(enemy_bullets[j].sprite, enemy_bullets[j].x, enemy_bullets[j].y);
+      C2D_SpriteSetRotation(enemy_bullets[j].sprite, deg_to_rad(-enemy_bullets[j].angle+90.0f));
+      C2D_DrawSprite(enemy_bullets[j].sprite);
+    }
+  }
+  
   int i = 0;
   for (; i < MAX_BULLETS; i++) {
     if (bulletmask >> i & 1) {
