@@ -1359,16 +1359,49 @@ void show_score(void)
     } while(1);
     fclose(fr);
   }
-  for(int i = 0; i < 5 && i <sb_count(records); i++){
+  if (sb_count(records) < 5) {
+    int j = 0;
+    while (sb_count(records) < 5) {
+      score_record_t predef_score;
+      strcpy(predef_score.name, predef_score_names[j]); 
+      predef_score.score = predef_score_scores[j];
+      sb_push(records, predef_score);
+      ++j;
+    }
+    /* Reorder scores */
+    for (int i = 0; i < sb_count(records); ++i) {
+      for (int j = 0; j < i; ++j) {
+        if (records[j].score < records[i].score) {
+          score_record_t tmp = records[j];
+          records[j] = records[i];
+          records[i] = tmp;
+        }
+      }
+    }        
+    /* Write predefined scores to file */
+    /* Rewrite ordered scores */
+    FILE *fw = fopen("ast3roiDS_scoreboard.txt", "w");
+    for (int i = 0; i < sb_count(records); ++i) {
+      fprintf(fw, "%s\n", records[i].name);
+      fprintf(fw, "@%d\n", records[i].score);
+    }
+    fclose(fw);
+  }
+  
+  for(int i = 0; i < 5 && i < sb_count(records); i++){
 
     char buf[SCORE_TEXT_LENGTH];
     stbsp_sprintf(buf, "%s ——- %d", records[i].name, records[i].score);
  
     s_buffer = C2D_TextBufNew(SCORE_TEXT_LENGTH);
     C2D_TextParse(&s_text, s_buffer, buf);
-    C2D_DrawText(&s_text, C2D_WithColor, initial_x, initial_y, 0.0f, 1.0f, 1.0f, WHITE);
+    C2D_DrawText(&s_text, C2D_WithColor, initial_x, initial_y, 0.0f, 0.7f, 0.7f, WHITE);
 
     initial_y += 15.0f;
-
   }
+ 
+  s_buffer = C2D_TextBufNew(SCORE_TEXT_LENGTH);
+  C2D_TextParse(&s_text, s_buffer, "Press A to go back");
+  C2D_DrawText(&s_text, C2D_WithColor, initial_x, BOTTOM_SCREEN_HEIGHT - 15.0f, 0.0f, 0.7f, 0.7f, WHITE);
+  sb_free(records);
 }

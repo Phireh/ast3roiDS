@@ -496,4 +496,8 @@ void show_score(void);
 void (*draw_player)    (void)                = draw_player_sprite;
 void (*draw_asteroids) (void)                = draw_asteroids_sprite;
 void (*draw_enemy_ship)(enemy_ship_t *enemy) = draw_enemy_ship_sprite;
+
+/* Predefined scores if there is no savegame */
+char *predef_score_names[] = {"Daigo", "TheViper", "Serral", "KeanuReeves", "TheLegend27"};
+int predef_score_scores[] = {1000000,10000,5000,3500,1337};
 #endif
