@@ -86,8 +86,15 @@ typedef enum {
               NORMAL_GAMESTATE,   // 0
               PAUSED_GAMESTATE,   // 1
               GAMEOVER_GAMESTATE, // 2
+              START_GAMESTATE,
               TOTAL_GAMESTATE     // 3
 } game_state_t;
+
+typedef enum {
+              PLAY_OPTION,    // 0
+              EXIT_OPTION,    // 1
+              TOTAL_OPTIONS   // 2
+} main_menu_options_t;
 
 typedef enum {
               SPRITE_PLAYER_NORMAL,       // 0
@@ -470,6 +477,11 @@ void draw_gameover_screen(void);
 void gameover_logic(void);
 void draw_gameover_fade(void);
 void reset_game(void);
+
+/* Main menu */
+void draw_main_menu(void);
+void draw_title(void);
+void draw_pointer(void);
 
 /* Writing to disk */
 void saving_score_logic(void);

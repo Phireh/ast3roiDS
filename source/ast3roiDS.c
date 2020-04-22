@@ -10,7 +10,13 @@ int               score;
 unsigned int      framecount; // NOTE: PRINTFRAME needs this name to be unchanged
 unsigned int      last_hit_frame;
 C2D_Text          score_text;
-C2D_TextBuf       score_text_buffer;    
+C2D_TextBuf       score_text_buffer; 
+
+C2D_Text          start_game_text;
+C2D_TextBuf       start_game_buffer;
+
+C2D_Text          exit_game_text;
+C2D_TextBuf       exit_game_buffer;
 
 /* Quick input summary:
    xinput          : -1 is full turn left, +1 is full turn right
@@ -20,7 +26,8 @@ float             xinput;
 float             yinput;
 float             xinput_sensitivity = 2.0f;
 float             yinput_sensitivity = 0.01f;
-int               game_state = NORMAL_GAMESTATE;
+int               game_state = START_GAMESTATE;
+int               main_menu_selected = PLAY_OPTION;
 
 C2D_SpriteSheet   player_spritesheet;
 C2D_SpriteSheet   bullet_spritesheet;
@@ -29,6 +36,8 @@ C2D_SpriteSheet   asteroid_spritesheet;
 C2D_SpriteSheet   enemy_spritesheet;
 C2D_SpriteSheet   pickup_hp_spritesheet;
 C2D_SpriteSheet   player_health_spritesheet;
+C2D_SpriteSheet   title_spritesheet;
+C2D_SpriteSheet   pointer_spritesheet;
 
 C2D_Sprite        bullet_normal_sprite;
 C2D_Sprite        bullet_enemy_sprite;
@@ -37,6 +46,8 @@ C2D_Sprite        asteroid_sprites[SPRITE_ASTEROID_TOTAL];
 C2D_Sprite        enemy_sprites[SPRITE_ENEMY_TOTAL];
 C2D_Sprite        pickup_hp_sprites[SPRITE_PICKUP_HP_TOTAL];
 C2D_Sprite        player_health_sprite[PLAYER_STARTING_HP];
+C2D_Sprite        title_sprite;
+C2D_Sprite        pointer_sprite;
 
 
 u32               bulletmask; // NOTE: this has to have MAX_BULLETS bits
@@ -154,12 +165,14 @@ int main(int argc, char *argv[])
         }
       }
 
+      
       /** Rendering **/
       C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
       /* Draw to top screen */
       C2D_TargetClear(top, BLACK);
       C2D_SceneBegin(top);
 
+      if (game_state != START_GAMESTATE){
       draw_background_static(&background_static_sprite);
       draw_player();
       draw_bullets();
@@ -169,12 +182,19 @@ int main(int argc, char *argv[])
           draw_pickup(&pickups[i]);
         }
       }
-      for (int i = 0; i < MAX_ENEMY_SHIPS; ++i)
-        if (enemy_ships[i].state) // not inactive
+      for (int i = 0; i < MAX_ENEMY_SHIPS; ++i) {
+        if (enemy_ships[i].state) { // not inactive
           draw_enemy_ship(&enemy_ships[i]);
-
-      if (game_state == GAMEOVER_GAMESTATE) {
+          }
+        }
+      }
+      
+       if (game_state == GAMEOVER_GAMESTATE) {
         draw_gameover_fade();
+      }
+
+       if (game_state == START_GAMESTATE) {
+        draw_title();
       }
     
       C2D_Flush();
@@ -182,11 +202,14 @@ int main(int argc, char *argv[])
       /* Draw to bottom screen */
       C2D_TargetClear(bottom, BLACK);
       C2D_SceneBegin(bottom);
-      if (game_state == GAMEOVER_GAMESTATE) {
+     if (game_state == GAMEOVER_GAMESTATE) {
         draw_gameover_screen();
-      } else {
+      } else if (game_state == NORMAL_GAMESTATE) {
         draw_score();
         draw_health();
+      } else if (game_state == START_GAMESTATE) {
+        draw_main_menu();
+        draw_pointer();
       }
       C3D_FrameEnd(0);
     }
@@ -227,6 +250,14 @@ void init_sprites()
 
   player_health_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/player_health_sprite.t3x");
 
+  title_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/title_sprite.t3x");
+  if (!title_spritesheet)
+    PRINTDINIT("Could not load asteroid spritesheet\n");
+  
+  pointer_spritesheet = C2D_SpriteSheetLoad("romfs:/gfx/pointer_sprite.t3x");
+  if (!pointer_spritesheet)
+    PRINTDINIT("Could not load asteroid spritesheet\n");
+
   for (int i = 0; i < SPRITE_PICKUP_HP_TOTAL; ++i) {
     C2D_SpriteFromSheet(&pickup_hp_sprites[i], pickup_hp_spritesheet, i);
     C2D_SpriteSetCenter(&pickup_hp_sprites[i], 0.5f, 0.5f);
@@ -254,6 +285,12 @@ void init_sprites()
     C2D_SpriteFromSheet(&player_health_sprite[i], player_health_spritesheet, 0);
     C2D_SpriteSetCenter(&player_health_sprite[i], 0.5f, 0.5f);
   }
+
+  C2D_SpriteFromSheet(&title_sprite, title_spritesheet, 0);
+  C2D_SpriteSetCenter(&title_sprite, 0.5f, 0.5f);
+    
+  C2D_SpriteFromSheet(&pointer_sprite, pointer_spritesheet, 0);
+  C2D_SpriteSetCenter(&pointer_sprite, 0.5f, 0.5f);
   
 
 }
@@ -531,7 +568,22 @@ int process_input(u32 keys_down, u32 keys_held)
     if (keys_down & KEY_A) {
       saving_score = score;
     }
-  }
+  } else if (game_state == START_GAMESTATE) {
+      if (keys_down & KEY_A) {
+        if (main_menu_selected == PLAY_OPTION) { game_state = NORMAL_GAMESTATE; }
+        else { return EXIT_GAME_INPUT; }
+      }
+
+      if (keys_down & KEY_UP) {
+        if (main_menu_selected == PLAY_OPTION) { main_menu_selected = EXIT_OPTION; }
+        else { main_menu_selected = PLAY_OPTION; }
+      }
+
+    if (keys_down & KEY_DOWN) {
+        if (main_menu_selected == PLAY_OPTION) { main_menu_selected = EXIT_OPTION;}
+        else  { main_menu_selected = PLAY_OPTION; }
+      }
+    }
   
   return NORMAL_INPUT;
 }
@@ -1092,6 +1144,43 @@ void draw_score(void)
   C2D_DrawText(&score_text, C2D_WithColor, 5.0f, 5.0f, 0.0f, 1.0f, 1.0f, WHITE);
 }
 
+void draw_main_menu(void)
+{
+
+  char start_buf[SCORE_TEXT_LENGTH];
+  stbsp_sprintf(start_buf, "Start Game");
+ 
+  start_game_buffer = C2D_TextBufNew(SCORE_TEXT_LENGTH);
+  C2D_TextParse(&start_game_text, start_game_buffer, start_buf);
+  C2D_DrawText(&start_game_text, C2D_WithColor, 70.0f, 50.0f, 0.0f, 1.0f, 1.0f, WHITE);
+
+  char exit_buf[SCORE_TEXT_LENGTH];
+  stbsp_sprintf(exit_buf, "Exit");
+ 
+  exit_game_buffer = C2D_TextBufNew(SCORE_TEXT_LENGTH);
+  C2D_TextParse(&exit_game_text, exit_game_buffer, exit_buf);
+  C2D_DrawText(&exit_game_text, C2D_WithColor, 70.0f, 100.0f, 0.0f, 1.0f, 1.0f, WHITE);
+
+}
+
+void draw_title(void)
+{
+  C2D_SpriteSetPos(&title_sprite, 200.0f , 150.0f);
+  C2D_DrawSprite(&title_sprite);
+}
+
+void draw_pointer(void)
+{
+  if(main_menu_selected == PLAY_OPTION){
+    C2D_SpriteSetPos(&pointer_sprite, 45.0f , 65.0f);
+    C2D_DrawSprite(&pointer_sprite);
+  }
+  else{
+    C2D_SpriteSetPos(&pointer_sprite, 45.0f , 115.0f);
+    C2D_DrawSprite(&pointer_sprite);
+  }
+}
+
 void draw_health(void)
 {
   init_health();
@@ -1112,7 +1201,7 @@ void draw_background_static(C2D_Sprite *background)
 
 void reset_game(void)
 {
-  game_state = NORMAL_GAMESTATE;
+  game_state = START_GAMESTATE;
   asteroidmask = 0;
   bulletmask = 0;
   framecount = 0;
@@ -1122,6 +1211,11 @@ void reset_game(void)
 
   for (int i = 0; i < MAX_ENEMY_SHIPS; ++i)
     enemy_ships[i].state = ENEMY_STATE_INACTIVE;
+
+  for (int i = 0; i < MAX_ENEMY_BULLETS; ++i) enemy_bullets[i].state = BULLET_STATE_INACTIVE;
+
+  for (int i = 0; i < MAX_PICKUPS; ++i) pickups[i].state = PICKUP_STATE_INACTIVE;
+
 
   /* NOTE(David): at the moment init_sprites() should not be called here.
      This may change at some point if we free graphics memory in-between levels */
