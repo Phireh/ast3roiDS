@@ -54,7 +54,7 @@
 #define MAX_ASTEROID_SIZE       40.0f
 #define ASTEROID_NUMBER         10
 #define ASTEROID_MAXSPEED       0.5f
-#define ASTEROID_BIG_RATIO      0.8f
+#define ASTEROID_BIG_RATIO      0.7f
 #define ASTEROID_NORMAL_RATIO   0.5f
 #define ASTEROID_SMALL_RATIO    0.2f
 #define ASTEROID_SMALL_SCORE    50
@@ -119,7 +119,7 @@ typedef enum {
               SPRITE_ASTEROID_SMALL,      // 0
               SPRITE_ASTEROID_NORMAL,     // 1
               SPRITE_ASTEROID_BIG,        // 2
-              SPRITE_ASTEROID_TOTAL
+              SPRITE_ASTEROID_TOTAL       // 3
 } asteroid_spritesheet_idx_t;
 
 typedef enum {

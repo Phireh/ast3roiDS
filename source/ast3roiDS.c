@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
       case NORMAL_INPUT: // nothing to do
         break;
       case PAUSE_GAME_INPUT: // pause on-off switch
-        if (game_state == NORMAL_GAMESTATE)
+        if (game_state != PAUSED_GAMESTATE)
           game_state = PAUSED_GAMESTATE;
         else
           game_state = NORMAL_GAMESTATE;
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
       C2D_SceneBegin(bottom);
      if (game_state == GAMEOVER_GAMESTATE) {
         draw_gameover_screen();
-      } else if (game_state == NORMAL_GAMESTATE) {
+      } else if (game_state == NORMAL_GAMESTATE || game_state == PAUSED_GAMESTATE) {
         draw_score();
         draw_health();
       } else if (game_state == START_GAMESTATE) {
@@ -529,7 +529,19 @@ void draw_player_nosprite()
 int process_input(u32 keys_down, u32 keys_held)
 {
   // for inputs that do not care about the first press
-  u32 input_keys = keys_down | keys_held; 
+  u32 input_keys = keys_down | keys_held;
+
+  if (game_state == PAUSED_GAMESTATE) {
+    if (keys_down & KEY_SELECT) {
+      PRINTDINPUT("Pressed KEY_SELECT\n");
+      return EXIT_GAME_INPUT;
+    }
+    if (keys_down & KEY_START) {
+      PRINTDINPUT("Pressed KEY_START\n");
+      return PAUSE_GAME_INPUT;
+    }    
+
+  }
 
   if (game_state == NORMAL_GAMESTATE) {
     if (input_keys & KEY_CPAD_RIGHT) {
@@ -556,45 +568,47 @@ int process_input(u32 keys_down, u32 keys_held)
       shoot_bullet();
       PRINTDINPUT("Pressed KEY_A\n");
     }
-  
-    if (keys_down & KEY_SELECT) {
-      PRINTDINPUT("Pressed KEY_SELECT\n");
-      return EXIT_GAME_INPUT;
-    }
     if (keys_down & KEY_START) {
       PRINTDINPUT("Pressed KEY_START\n");
       return PAUSE_GAME_INPUT;
-    }
+    }    
+
+  
+
 
 #ifdef DEBUG_MODE
     if (keys_down & KEY_B)
       return DEBUG_ENEMIES_INPUT;
 #endif
+    
   } else if (game_state == GAMEOVER_GAMESTATE) {
     if (keys_down & KEY_A) {
       saving_score = score;
     }
   } else if (game_state == START_GAMESTATE) {
-      if (keys_down & KEY_A) {
-        if (main_menu_selected == PLAY_OPTION) { game_state = NORMAL_GAMESTATE; }
-        else if(main_menu_selected == SCORE_OPTION){  game_state = SCORE_GAMESTATE; }
-        else { return EXIT_GAME_INPUT; }
-      }
+    if (keys_down & KEY_A) {
+      if (main_menu_selected == PLAY_OPTION) { game_state = NORMAL_GAMESTATE; }
+      else if(main_menu_selected == SCORE_OPTION){  game_state = SCORE_GAMESTATE; }
+      else { return EXIT_GAME_INPUT; }
+    }
 
-      if (keys_down & KEY_UP) {
-        if (main_menu_selected == PLAY_OPTION) { main_menu_selected = EXIT_OPTION; }
-        else if (main_menu_selected == SCORE_OPTION){ main_menu_selected = PLAY_OPTION; }
-        else { main_menu_selected = SCORE_OPTION; }
-      }
+    if (keys_down & KEY_UP) {
+      if (main_menu_selected == PLAY_OPTION) { main_menu_selected = EXIT_OPTION; }
+      else if (main_menu_selected == SCORE_OPTION){ main_menu_selected = PLAY_OPTION; }
+      else { main_menu_selected = SCORE_OPTION; }
+    }
 
     if (keys_down & KEY_DOWN) {
-        if (main_menu_selected == PLAY_OPTION) { main_menu_selected = SCORE_OPTION;}
-        else if (main_menu_selected == SCORE_OPTION){ main_menu_selected = EXIT_OPTION; }
-        else { main_menu_selected = PLAY_OPTION; }
-      }
-    } else if(game_state == SCORE_GAMESTATE) {
-      if (keys_down & KEY_A) { game_state = START_GAMESTATE; }
+      if (main_menu_selected == PLAY_OPTION) { main_menu_selected = SCORE_OPTION;}
+      else if (main_menu_selected == SCORE_OPTION){ main_menu_selected = EXIT_OPTION; }
+      else { main_menu_selected = PLAY_OPTION; }
     }
+  } else if(game_state == SCORE_GAMESTATE) {
+    if (keys_down & KEY_A) { game_state = START_GAMESTATE; }
+  } 
+
+  
+
   
   return NORMAL_INPUT;
 }
@@ -612,6 +626,8 @@ void player_logic()
     gameover_frame = framecount;
     return;
   }
+  /* Make sure we don't overheal */
+  player_ship.health = player_ship.health > PLAYER_STARTING_HP ? PLAYER_STARTING_HP : player_ship.health;
   
   /* Apply input sensitivity */
   xinput = xinput * xinput_sensitivity;
@@ -672,6 +688,19 @@ void enemy_ship_logic(enemy_ship_t *enemy)
 
   if (!enemy->health) {
     enemy->state = ENEMY_STATE_INACTIVE;
+    int loot = dispatch_loot_table(enemy->loot_table);
+    switch (loot) {
+    case EXTRA_SCORE:
+      score += 1000;
+    case PICKUP_HP:
+     for (int i = 0; i < MAX_PICKUPS; ++i) {
+      if (!pickups[i].state) { // inactive
+        pickups[i] = spawn_pickup(PICKUP_HP, enemy->x, enemy->y, 0.0f, 0.0f, 10.0f, WHITE);
+        break;
+      }
+     }
+     break;  
+    }
     return;
   }
 
@@ -814,6 +843,11 @@ enemy_ship_t spawn_enemy_ship(float x, float y, float xs, float ys, float r, u32
   .sprites[0]   =  enemy_sprites[0],
   .curr_sprite  =  SPRITE_ENEMY_NORMAL
   };
+  loot_table_t new_loot_table = {
+                                 .probabilities = {0.1f, 0.5f, 1.0f},
+                                 .items = {NOTHING, EXTRA_SCORE, PICKUP_HP},
+  };
+  new_enemy.loot_table = new_loot_table;
   return new_enemy;
 }
 
@@ -980,7 +1014,7 @@ void break_asteroid(asteroid_t *asteroid, int idx)
     }
     break;
   case EXTRA_SCORE:
-    score += 10000000; // TODO(David): change this nonsense. This is for testing purposes
+    score += 200;
     break;
   }
   
@@ -989,7 +1023,8 @@ void break_asteroid(asteroid_t *asteroid, int idx)
   /* Free asteroid struct position */
   asteroidmask &= ~(1 << idx);
   if (size > ASTEROID_SIZE_SMALL) {
-    spawn_asteroids(asteroid->x, asteroid->y, size-1, 2);
+    int n = rand() % 3;
+    spawn_asteroids(asteroid->x, asteroid->y, size-1, n);
   }
   /* Increment score based on asteroid size */
   switch (size) {
@@ -1009,6 +1044,7 @@ void break_asteroid(asteroid_t *asteroid, int idx)
 
 void spawn_asteroids(float x, float y, asteroid_size_t size, int n)
 {
+  if (!n) return;
   asteroid_t *asteroid;
   for (int i = 0; i < n; i++) {
     /* Look for free positions in array */
