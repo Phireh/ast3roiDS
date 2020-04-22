@@ -1115,7 +1115,7 @@ void saving_score_logic()
 void write_score_to_disk(char *name, int score_to_save)
 {
 
-  FILE *fr = fopen("test.txt", "r");
+  FILE *fr = fopen("ast3roiDS_scoreboard.txt", "r");
   score_record_t *records = NULL;
 
   if (fr) {
@@ -1147,7 +1147,7 @@ void write_score_to_disk(char *name, int score_to_save)
   }
 
   /* Rewrite ordered scores */
-  FILE *fw = fopen("test.txt", "w");
+  FILE *fw = fopen("ast3roiDS_scoreboard.txt", "w");
   for (int i = 0; i < sb_count(records); ++i) {
     fprintf(fw, "%s\n", records[i].name);
     fprintf(fw, "@%d\n", records[i].score);
